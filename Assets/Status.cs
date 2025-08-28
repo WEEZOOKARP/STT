@@ -8,6 +8,7 @@ public class Status : MonoBehaviour
 
     public healthBar healthBar;
     public GameObject player;
+    public bool isdead = false;
 
     void Start()
     {
