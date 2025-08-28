@@ -1,0 +1,44 @@
+# =============== #
+# Unity generated #
+# =============== #
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+UserSettings/
+sysinfo.txt
+
+# ============ #
+# OS generated #
+# ============ #
+.DS_Store
+Thumbs.db
+
+# ============== #
+# Visual Studio  #
+# ============== #
+.vscode/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+
+# ============ #
+# JetBrains IDE #
+# ============ #
+.idea/
+*.iml
+
+# =============== #
+# Rider/VS Cache  #
+# =============== #
+.vs/
