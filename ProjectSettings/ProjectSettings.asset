@@ -4,7 +4,7 @@
 PlayerSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 28
-  productGUID: d95b012505d6546618ab2c628c887356
+  productGUID: 13c369646e19f48ae99eca4c7b8c9c79
   AndroidProfiler: 0
   AndroidFilterTouchesWhenObscured: 0
   AndroidEnableSustainedPerformanceMode: 0
@@ -916,10 +916,10 @@ PlayerSettings:
   captureStartupLogs: {}
   activeInputHandler: 1
   windowsGamepadBackendHint: 0
-  cloudProjectId: eae4001c-fb52-4a05-83fa-d4c2debd1e0e
+  cloudProjectId: efc35f45-9ed9-4a0a-953b-7ca765ddef59
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: STT
+  projectName: STT 2025-08-29_09-10-18
   organizationId: maxwell-young
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
