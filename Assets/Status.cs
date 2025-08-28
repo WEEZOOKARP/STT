@@ -48,6 +48,6 @@ public class Status : MonoBehaviour
 
     private void killPlayer(String cause)
     {
-        isdead = true;
+        bool isdead = true;
     }
 }
