@@ -10,6 +10,7 @@
 [Mm]emoryCaptures/
 UserSettings/
 sysinfo.txt
+*.cs.meta
 
 # ============ #
 # OS generated #
