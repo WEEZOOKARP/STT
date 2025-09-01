@@ -1,7 +1,16 @@
 using System;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
+
+public struct playerStats
+{
+    public int reloadMult;
+    public int damageMult;
+    public int healthMult;
+    public int projectileLifestealMult;
+}
 
 public class Leveling : MonoBehaviour
 {
@@ -11,21 +20,17 @@ public class Leveling : MonoBehaviour
     public int incrimentPerLevel = 50; // how much xp to go up per level
     public Slider experienceBar; // shows player's experience
     public TextMeshProUGUI levelText; // shows player's level
-    public TextMeshProUGUI levelUpPointsText; // shows player's skill points
+    public TextMeshProUGUI SkillPointsText; // shows player's skill points
     public Button levelUpButton; // button to level up
-    public int levelUpPoints = 0; // stores player's skill points
-    private bool canUpskill = false; // toggles display of level up button
-
+    public int SkillPoints = 0; // stores player's skill points
+    
     void Update()
     {
+        experienceBar.maxValue = Mathf.RoundToInt(experienceToNextLevel);
         experienceBar.value = Mathf.RoundToInt(experience);
         levelText.text = "Level " + level.ToString();
-        if (levelUpPoints <= 0){
-            levelUpPointsText.text = "Skill Points: " + levelUpPoints.ToString();
-        } else {
-            levelUpPointsText.text = "";
-        }
-        levelUpButton.enabled = canUpskill;
+        SkillPointsText.text = "Skill Points: " + SkillPoints.ToString();
+        levelUpButton.gameObject.SetActive(SkillPoints>=1);
     }
 
     // reset xp, increase level, increased xp needed, give skill point
@@ -34,7 +39,7 @@ public class Leveling : MonoBehaviour
         experience = 0f;
         level++;
         experienceToNextLevel += incrimentPerLevel;
-        levelUpPoints++;
+        SkillPoints++;
     }
 
     // add xp and check for level up
