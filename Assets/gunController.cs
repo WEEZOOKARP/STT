@@ -9,39 +9,66 @@ public class gunController : MonoBehaviour
     public InputActionProperty triggerAction;
     public ammoBar ammo;
     public ParticleSystem muzzleFlash;
+    public AudioSource gunSound;
+    public AudioClip shootSound;
+    public AudioClip reloadSound;
+    public AudioClip dryFireSound;
 
     void Update()
     {
-        // VR trigger input
         float triggerValue = triggerAction.action.ReadValue<float>();
-        if (triggerValue > 0.1f && ammo.currentAmmo > 0)
+        if (triggerValue > 0.1f)
         {
-            FireWeapon();
+            tryShoot();
         }
 
         // Keyboard test input
-        if (Input.GetKeyDown(KeyCode.X) && ammo.currentAmmo > 0)
+        if (Input.GetKeyDown(KeyCode.X))
         {
-            FireWeapon();
+            tryShoot();
         }
+        if (Input.GetKeyDown(KeyCode.Z))
+        {
+            reloadWeapon();
+        }
+
+    }
+
+    void tryShoot()
+    {
+       if(ammo.currentAmmo>0){
+            FireWeapon();
+       }else{
+            if (gunSound != null && dryFireSound != null)
+            gunSound.PlayOneShot(dryFireSound);
+       }
     }
 
     void FireWeapon()
     {
-        // Play muzzle flash
         if (muzzleFlash != null)
         {
             muzzleFlash.Play();
         }
+        if(gunSound!=null&&shootSound!=null)
+        {
+           gunSound.PlayOneShot(shootSound);
+        }
 
-        // Reduce ammo
         ammo.ReduceAmmo(1);
 
-        // Raycast shooting
         RaycastHit hit;
         if (Physics.Raycast(barrelEnd.position, barrelEnd.forward, out hit, range))
         {
             Debug.Log("Hit: " + hit.collider.name);
+        }
+    }
+
+    void reloadWeapon()
+    {
+      if(gunSound!=null&&reloadSound!=null&&ammo.currentAmmo<ammo.maxAmmo)
+        {
+           gunSound.PlayOneShot(reloadSound);
         }
     }
 }
