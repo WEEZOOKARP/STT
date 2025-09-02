@@ -45,7 +45,7 @@ public class ammoBar : MonoBehaviour
        }
     }
 
-    void ReduceAmmo(int shot)
+    public void ReduceAmmo(int shot)
     {
         currentAmmo -= shot;
         if (currentAmmo < 0) currentAmmo = 0;
