@@ -3355,13 +3355,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 24876729}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b7375b0e697d54c9ab7a05146036c745, type: 3}
+  m_Script: {fileID: 11500000, guid: 8c6ac2162cd6145b0b8725b2ad90aa85, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   useLaptopControl: 1
   bulletPrefab: {fileID: 3244378139380981886, guid: f7f50c9ac7e7a492f8ec55ed9b25aeee, type: 3}
   bulletSpawn: {fileID: 1874426631}
-  bulletSpeed: 500
+  bulletSpeed: 50
   bulletLifeTime: 2
   moveSpeed: 5
   lookSpeed: 2
@@ -3371,7 +3371,7 @@ MonoBehaviour:
       m_Name: Position
       m_Type: 0
       m_ExpectedControlType: 
-      m_Id: 3ea8bd54-6fd2-43af-9459-c02b367d8d21
+      m_Id: 67d034f9-ff5d-42eb-a339-3eebb457fb8b
       m_Processors: 
       m_Interactions: 
       m_SingletonActionBindings: []
@@ -3383,7 +3383,7 @@ MonoBehaviour:
       m_Name: Rotation
       m_Type: 0
       m_ExpectedControlType: 
-      m_Id: 88505e79-23e8-4f6e-a14e-899d7967b4d1
+      m_Id: 85466da7-a5fd-441d-b23e-54a9bf911537
       m_Processors: 
       m_Interactions: 
       m_SingletonActionBindings: []
@@ -3395,7 +3395,7 @@ MonoBehaviour:
       m_Name: Trigger
       m_Type: 0
       m_ExpectedControlType: 
-      m_Id: 566c6e12-696a-411d-9fe1-3571fe5066bf
+      m_Id: 97b6fba3-c28b-4c16-aeaf-c55528046bc0
       m_Processors: 
       m_Interactions: 
       m_SingletonActionBindings: []
