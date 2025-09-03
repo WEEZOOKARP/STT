@@ -73,7 +73,7 @@ public class statusBar : MonoBehaviour
         Vector2 currentPos = textRectTransform.anchoredPosition;
         currentPos.x -= scrollSpeed * Time.deltaTime;
 
-        if (currentPos.x < -textWidth * 0.6)
+        if (currentPos.x < -textWidth * 0.5)
         {
             currentPos.x = parentWidth;
         }
