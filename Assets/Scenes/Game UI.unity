@@ -3355,7 +3355,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 24876729}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8c6ac2162cd6145b0b8725b2ad90aa85, type: 3}
+  m_Script: {fileID: 11500000, guid: 9e01e2d35289e4809ab10f51c5ab9841, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   useLaptopControl: 1
@@ -3371,7 +3371,7 @@ MonoBehaviour:
       m_Name: Position
       m_Type: 0
       m_ExpectedControlType: 
-      m_Id: 67d034f9-ff5d-42eb-a339-3eebb457fb8b
+      m_Id: 07da06df-88b3-4d79-b530-3410613ecbef
       m_Processors: 
       m_Interactions: 
       m_SingletonActionBindings: []
@@ -3383,7 +3383,7 @@ MonoBehaviour:
       m_Name: Rotation
       m_Type: 0
       m_ExpectedControlType: 
-      m_Id: 85466da7-a5fd-441d-b23e-54a9bf911537
+      m_Id: 9ba70fd0-2033-431e-be8f-da4e2d10b908
       m_Processors: 
       m_Interactions: 
       m_SingletonActionBindings: []
@@ -3395,7 +3395,7 @@ MonoBehaviour:
       m_Name: Trigger
       m_Type: 0
       m_ExpectedControlType: 
-      m_Id: 97b6fba3-c28b-4c16-aeaf-c55528046bc0
+      m_Id: 8ba4da96-5712-4ca2-9d5a-727f2aad085e
       m_Processors: 
       m_Interactions: 
       m_SingletonActionBindings: []
