@@ -45,7 +45,22 @@ public class Leveling : MonoBehaviour
     // add xp and check for level up
     public void AddExperience(float amount)
     {
-        experience += amount;
+        // Apply meta progression experience bonus
+        float bonusMultiplier = 1f;
+        if (MetaProgression.Instance != null)
+        {
+            bonusMultiplier += MetaProgression.Instance.GetExperienceBonus();
+        }
+        
+        float finalAmount = amount * bonusMultiplier;
+        experience += finalAmount;
+        
+        // Track experience gain in meta progression
+        if (MetaProgression.Instance != null)
+        {
+            MetaProgression.Instance.GainExperience(finalAmount);
+        }
+        
         if (experience >= experienceToNextLevel)
         {
             LevelUp();
