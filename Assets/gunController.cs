@@ -4,24 +4,11 @@ using System.Collections;
 
 public class gunController : MonoBehaviour
 {
-    public bool useLaptopControl = true;
-
     [Header("Gun Settings")]
     public GameObject bulletPrefab;
     public Transform bulletSpawn;
-    public float bulletSpeed = 50;
+    public float bulletSpeed = 50f;
     public float bulletLifeTime = 2f;
-
-    [Header("Laptop test Settings")]
-    public float moveSpeed = 5f;
-    public float lookSpeed = 2f;
-
-    [Header("VR Controls")]
-    public InputActionProperty positionAction; // XR controller position
-    public InputActionProperty rotationAction; // XR controller rotation
-
-    [Header("VR Input")]
-    public InputActionProperty triggerAction;
 
     [Header("Ammo & UI")]
     public ammoBar ammo;
@@ -33,40 +20,78 @@ public class gunController : MonoBehaviour
     public AudioClip reloadSound;
     public AudioClip dryFireSound;
 
+    [Header("Testing Settings")]
+    public bool testOnPC = true;
+    public float mouseSensitivity = 100f;
+
     private bool canShoot = true;
+    private float xRotation = 0f; // vertical pitch
+
+    void Start()
+    {
+        Input.gyro.enabled = true;
+
+        if (testOnPC)
+            Cursor.lockState = CursorLockMode.Locked;
+    }
 
     void Update()
     {
-        HandleTrigger();
-        HandleKeyboardInput();
-
-        if (useLaptopControl)
-            HandleLaptopMovement();
-        else
-            HandleVRMovement();
+        HandleInput();
+        HandleAiming();
     }
 
-    void HandleTrigger()
+    void HandleInput()
     {
-        float triggerValue = triggerAction.action.ReadValue<float>();
-
-        if (triggerValue > 0.1f && canShoot)
+        if (testOnPC)
         {
-            TryShoot();
-            canShoot = false;
-        }
+            if (Mouse.current.leftButton.isPressed && canShoot)
+            {
+                TryShoot();
+                canShoot = false;
+            }
+            if (!Mouse.current.leftButton.isPressed)
+                canShoot = true;
 
-        if (triggerValue <= 0.1f)
-            canShoot = true;
+            if (Keyboard.current.zKey.wasPressedThisFrame)
+                ReloadWeapon();
+        }
+        else
+        {
+            if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.isPressed && canShoot)
+            {
+                TryShoot();
+                canShoot = false;
+            }
+            if (Touchscreen.current != null && !Touchscreen.current.primaryTouch.press.isPressed)
+                canShoot = true;
+        }
     }
 
-    void HandleKeyboardInput()
+    void HandleAiming()
     {
-        if (Input.GetKeyDown(KeyCode.X))
-            TryShoot();
+        if (testOnPC)
+        {
+            // Mouse look (pitch + yaw)
+            float mouseX = Mouse.current.delta.x.ReadValue() * mouseSensitivity * Time.deltaTime;
+            float mouseY = Mouse.current.delta.y.ReadValue() * mouseSensitivity * Time.deltaTime;
 
-        if (Input.GetKeyDown(KeyCode.Z))
-            ReloadWeapon();
+            xRotation -= mouseY;
+            xRotation = Mathf.Clamp(xRotation, -80f, 80f);
+
+            Camera.main.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f); // pitch
+            Camera.main.transform.parent.Rotate(Vector3.up * mouseX); // yaw via camera's parent
+        }
+        else
+        {
+            // Phone gyro
+            Quaternion gyro = Input.gyro.attitude;
+            Quaternion deviceRotation = new Quaternion(gyro.x, gyro.y, -gyro.z, -gyro.w);
+
+            // Apply relative to camera parent for full yaw + pitch
+            Camera.main.transform.rotation = Camera.main.transform.parent.rotation *
+                                            Quaternion.Euler(90, 0, 0) * deviceRotation * Quaternion.Euler(0, 0, 180);
+        }
     }
 
     private void TryShoot()
@@ -77,7 +102,6 @@ public class gunController : MonoBehaviour
         }
         else
         {
-            // Dry fire sound
             if (gunSound != null && dryFireSound != null)
                 gunSound.PlayOneShot(dryFireSound);
         }
@@ -93,8 +117,11 @@ public class gunController : MonoBehaviour
 
         ammo.ReduceAmmo(1);
 
-        GameObject bullet = Instantiate(bulletPrefab, bulletSpawn.position, Quaternion.identity);
-        bullet.GetComponent<Rigidbody>().AddForce(bulletSpawn.forward.normalized * bulletSpeed, ForceMode.Impulse);
+        // Shoot along camera forward (doesn't rotate the gun)
+        Vector3 shootDirection = Camera.main.transform.forward;
+        GameObject bullet = Instantiate(bulletPrefab, bulletSpawn.position, Quaternion.LookRotation(shootDirection));
+        bullet.GetComponent<Rigidbody>().AddForce(shootDirection * bulletSpeed, ForceMode.Impulse);
+
         StartCoroutine(DestroyBulletAfterTime(bullet, bulletLifeTime));
     }
 
@@ -104,7 +131,7 @@ public class gunController : MonoBehaviour
         Destroy(bullet);
     }
 
-    private void ReloadWeapon()
+    public void ReloadWeapon()
     {
         if (ammo.currentAmmo < ammo.maxAmmo)
         {
@@ -115,30 +142,8 @@ public class gunController : MonoBehaviour
             Debug.Log("Reloaded!");
         }
     }
-
-    void HandleLaptopMovement()
-    {
-        // Move with WASD
-        float h = Input.GetAxis("Horizontal");
-        float v = Input.GetAxis("Vertical");
-        transform.Translate(new Vector3(h, 0, v) * moveSpeed * Time.deltaTime);
-
-        // Look with mouse
-        float mouseX = Input.GetAxis("Mouse X") * lookSpeed;
-        float mouseY = Input.GetAxis("Mouse Y") * lookSpeed;
-        transform.Rotate(Vector3.up * mouseX);
-        transform.Rotate(Vector3.left * mouseY);
-    }
-
-    void HandleVRMovement()
-    {
-        Vector3 pos = positionAction.action.ReadValue<Vector3>();
-        Quaternion rot = rotationAction.action.ReadValue<Quaternion>();
-
-        transform.localPosition = pos;
-        transform.localRotation = rot;
-    }
 }
+
 
 
 
