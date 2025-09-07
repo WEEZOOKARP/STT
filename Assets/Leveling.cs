@@ -3,6 +3,7 @@ using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections.Generic;
 
 public struct playerStats
 {
@@ -10,6 +11,32 @@ public struct playerStats
     public int damageMult;
     public int healthMult;
     public int projectileLifestealMult;
+}
+
+[System.Serializable]
+public struct skill {
+    public String name;
+    public int cost;
+    public String description;
+    public Boolean active;
+
+    public skill(string name, int cost, String description, Boolean active)
+    {
+        this.name = name;
+        this.cost = cost;
+        this.description = description;
+        this.active = active;
+    }
+
+    public int getCost(){
+        return this.cost;
+    }
+
+    public Boolean claim()
+    {
+        this.active = true;
+        return this.active;
+    }
 }
 
 public class Leveling : MonoBehaviour
@@ -23,7 +50,8 @@ public class Leveling : MonoBehaviour
     public TextMeshProUGUI SkillPointsText; // shows player's skill points
     public Button levelUpButton; // button to level up
     public int SkillPoints = 0; // stores player's skill points
-    
+    public List<skill> skills = new List<skill>(); // The player's skills are stored here.
+
     void Update()
     {
         experienceBar.maxValue = Mathf.RoundToInt(experienceToNextLevel);
@@ -31,6 +59,19 @@ public class Leveling : MonoBehaviour
         levelText.text = "Level " + level.ToString();
         SkillPointsText.text = "Skill Points: " + SkillPoints.ToString();
         levelUpButton.gameObject.SetActive(SkillPoints>=1);
+    }
+
+    public void purchaseSkill(String name) {
+        for (int i = 0; i < skills.Count; i++)
+        {
+            if (skills[i].name == name && skills[i].getCost() <= SkillPoints)
+            {
+                SkillPoints -= skills[i].getCost();
+                print(skills[i].name);
+                print(skills[i].claim());
+                return;
+            }
+        }
     }
 
     // reset xp, increase level, increased xp needed, give skill point
