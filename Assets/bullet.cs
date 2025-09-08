@@ -6,8 +6,30 @@ public class Bullet : MonoBehaviour
 {
     private void OnCollisionEnter(Collision collision)
     {
-        Debug.Log("Hit " + collision.gameObject.name + "!");
-        Destroy(gameObject);
+        if (collision.gameObject.CompareTag("Enemy"))
+        {
+            print("hit " + collision.gameObject.name + "!");
+            createBulletEffect(collision);
+            Destroy(gameObject);
+        }
+        if (collision.gameObject.CompareTag("Wall"))
+        {
+            print("hit a wall");
+            createBulletEffect(collision);
+            Destroy(gameObject);
+        }
+    }
+
+    void createBulletEffect(Collision collision)
+    {
+        ContactPoint contact = collision.contacts[0];
+        GameObject hole = Instantiate(
+            GlobalReferences.Instance.bulletImpactPrefab,
+            contact.point,
+            Quaternion.LookRotation(contact.normal)
+        );
+        hole.transform.SetParent(collision.gameObject.transform);
     }
 }
+
 

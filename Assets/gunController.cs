@@ -7,7 +7,7 @@ public class gunController : MonoBehaviour
     [Header("Gun Settings")]
     public GameObject bulletPrefab;
     public Transform bulletSpawn;
-    public float bulletSpeed = 50f;
+    public float bulletSpeed = 500f;
     public float bulletLifeTime = 2f;
 
     [Header("Ammo & UI")]
@@ -22,7 +22,7 @@ public class gunController : MonoBehaviour
 
     [Header("Testing Settings")]
     public bool testOnPC = true;
-    public float mouseSensitivity = 100f;
+    public float mouseSensitivity = 150f;
 
     private bool canShoot = true;
     private float xRotation = 0f; // vertical pitch
