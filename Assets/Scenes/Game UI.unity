@@ -3244,7 +3244,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 70.98001, y: -8.399994}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1457191926
@@ -3259,6 +3259,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4510c2ed20d0641f985c86f7fe47fac5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  lowHpScreen: {fileID: 0}
+  playerHP: {fileID: 0}
+  lowHpThreshold: 0.3
+  maxAlpha: 0.6
 --- !u!1 &1521689557
 GameObject:
   m_ObjectHideFlags: 0
@@ -4051,6 +4055,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d95d154b2b944c87a3a522f13ad0c02, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  statTextIntro: {fileID: 0}
+  enableScroll: 1
+  scrollSpeed: 50
+  hpBar: {fileID: 0}
+  defenceIcon: {fileID: 0}
+  regenIcon: {fileID: 0}
+  powerIcon: {fileID: 0}
 --- !u!1 &1965153107
 GameObject:
   m_ObjectHideFlags: 0
@@ -4621,6 +4632,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67d2a5a7cdc7c45c5814e6886bead2a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  maxAmmo: 20
+  currentAmmo: 0
+  AmmoSlider: {fileID: 0}
+  easeAmmoSlider: {fileID: 0}
+  lerpSpeed: 0.03
+  lowAmmoColor: {r: 1, g: 1, b: 1, a: 1}
+  normalAmmoColor: {r: 0.1254902, g: 0.69803923, b: 0.6666667, a: 1}
+  ammoFill: {fileID: 0}
+  ammoText: {fileID: 0}
 --- !u!1 &2119902621
 GameObject:
   m_ObjectHideFlags: 0
@@ -4671,6 +4691,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d1a7b22bf3c24a7ea936d4039092b8b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  currentWave: 1
+  maxWave: 10
+  waveText: {fileID: 0}
 --- !u!1 &2127419976
 GameObject:
   m_ObjectHideFlags: 0
