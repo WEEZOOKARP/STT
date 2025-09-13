@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 public class GlobalReferences : MonoBehaviour
 {
-    public static GlobalReferences Instance { get; set; } // Fixed: Should be GlobalReferences, not GlobalReference
+    public static GlobalReferences Instance { get; set; }
     public GameObject bulletImpactPrefab;
 
     private void Awake()

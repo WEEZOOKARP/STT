@@ -19,6 +19,7 @@ public class gunController : MonoBehaviour
     public AudioClip shootSound;
     public AudioClip reloadSound;
     public AudioClip dryFireSound;
+    private Animator animator;
 
     [Header("Testing Settings")]
     public bool testOnPC = true;
@@ -33,6 +34,8 @@ public class gunController : MonoBehaviour
 
         if (testOnPC)
             Cursor.lockState = CursorLockMode.Locked;
+
+        animator = GetComponent<Animator>();
     }
 
     void Update()
@@ -111,6 +114,8 @@ public class gunController : MonoBehaviour
     {
         if (muzzleFlash != null)
             muzzleFlash.Play();
+
+        animator.SetTrigger("RECOIL");
 
         if (gunSound != null && shootSound != null)
             gunSound.PlayOneShot(shootSound);

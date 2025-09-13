@@ -2294,7 +2294,7 @@ Transform:
   m_GameObject: {fileID: 1109072850}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.5498, y: -101.5, z: 4.59235}
+  m_LocalPosition: {x: 1.5498, y: -101.5, z: -65}
   m_LocalScale: {x: 1000, y: 1000, z: 1000}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2318,7 +2318,7 @@ GameObject:
   - component: {fileID: 1147725187}
   m_Layer: 0
   m_Name: Cube
-  m_TagString: Untagged
+  m_TagString: Wall
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2332,7 +2332,7 @@ Transform:
   m_GameObject: {fileID: 1147725185}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.013, z: 0.231}
+  m_LocalPosition: {x: 0, y: 0.011, z: 0.231}
   m_LocalScale: {x: 0.22842014, y: 0.05524903, z: 0.05464}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2458,7 +2458,7 @@ GameObject:
   - component: {fileID: 1149392109}
   m_Layer: 8
   m_Name: Target (2)
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2486,7 +2486,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1149392107}
   serializedVersion: 5
-  m_Mass: 0.5
+  m_Mass: 10
   m_LinearDamping: 0
   m_AngularDamping: 0.05
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -2828,7 +2828,7 @@ GameObject:
   - component: {fileID: 1375468333}
   m_Layer: 8
   m_Name: Target
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2856,7 +2856,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1375468331}
   serializedVersion: 5
-  m_Mass: 0.5
+  m_Mass: 10
   m_LinearDamping: 0
   m_AngularDamping: 0.05
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -3919,7 +3919,7 @@ GameObject:
   - component: {fileID: 1922295150}
   m_Layer: 8
   m_Name: Target (1)
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3947,7 +3947,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1922295148}
   serializedVersion: 5
-  m_Mass: 0.5
+  m_Mass: 10
   m_LinearDamping: 0
   m_AngularDamping: 0.05
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -19707,6 +19707,7 @@ GameObject:
   - component: {fileID: 6595547618839958494}
   - component: {fileID: 6595547618839958496}
   - component: {fileID: 6595547618839958497}
+  - component: {fileID: 6595547618839958498}
   m_Layer: 0
   m_Name: STTpistol
   m_TagString: Untagged
@@ -19752,7 +19753,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5819714160024439140}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: 0.7071068}
+  m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
   m_LocalPosition: {x: 2, y: -1.8, z: 3}
   m_LocalScale: {x: 15, y: 15, z: 15}
   m_ConstrainProportionsScale: 0
@@ -19778,10 +19779,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e46514a3e58194211ad80cf38a33933a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  bulletPrefab: {fileID: 6027209801874771522, guid: f7f50c9ac7e7a492f8ec55ed9b25aeee, type: 3}
+  bulletPrefab: {fileID: 1218867317700019077, guid: b4b05383e49f344dfb66d3c20d247e52, type: 3}
   bulletSpawn: {fileID: 1670510314}
-  bulletSpeed: 500
-  bulletLifeTime: 0.2
+  bulletSpeed: 800
+  bulletLifeTime: 0.3
   ammo: {fileID: 2114838816}
   muzzleFlash: {fileID: 1926734165039485417}
   gunSound: {fileID: 6595547618839958497}
@@ -19887,6 +19888,28 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!95 &6595547618839958498
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5819714160024439140}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: d00167a42ff0845febda7390acde3348, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!199 &6663554229190998073
 ParticleSystemRenderer:
   serializedVersion: 6

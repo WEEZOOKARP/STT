@@ -1,35 +1,45 @@
 using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
 
 public class Bullet : MonoBehaviour
 {
+    public GameObject bulletImpactPrefab;
+
     private void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.CompareTag("Enemy"))
         {
-            print("hit " + collision.gameObject.name + "!");
-            createBulletEffect(collision);
-            Destroy(gameObject);
+            Debug.Log($"Hit {collision.gameObject.name}!");
+            CreateBulletEffect(collision);
+            Destroy(gameObject, 0.05f); // small delay for safety
         }
-        if (collision.gameObject.CompareTag("Wall"))
+        else if (collision.gameObject.CompareTag("Wall"))
         {
-            print("hit a wall");
-            createBulletEffect(collision);
-            Destroy(gameObject);
+            Debug.Log("Hit a wall");
+            CreateBulletEffect(collision);
+            Destroy(gameObject, 0.05f);
         }
     }
 
-    void createBulletEffect(Collision collision)
+    private void CreateBulletEffect(Collision collision)
     {
+        if (bulletImpactPrefab == null)
+        {
+            Debug.LogError("Bullet impact prefab is NOT assigned!");
+            return;
+        }
+
+        // Slight offset to avoid the hole being hidden inside the surface
         ContactPoint contact = collision.contacts[0];
+        Vector3 spawnPos = contact.point + contact.normal * 0.01f;
+
         GameObject hole = Instantiate(
-            GlobalReferences.Instance.bulletImpactPrefab,
-            contact.point,
+            bulletImpactPrefab,
+            spawnPos,
             Quaternion.LookRotation(contact.normal)
         );
-        hole.transform.SetParent(collision.gameObject.transform);
+
+        // Optional: Parent to hit object only if needed (e.g., moving enemy)
+        if (!collision.gameObject.CompareTag("Wall"))
+            hole.transform.SetParent(collision.transform);
     }
 }
-
-
