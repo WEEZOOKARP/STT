@@ -143,7 +143,7 @@ public class gunController : MonoBehaviour
         {
             if (gunSound != null && reloadSound != null)
                 gunSound.PlayOneShot(reloadSound);
-
+            animator.SetTrigger("RELOAD");
             ammo.Reload(5);
             Debug.Log("Reloaded!");
         }
