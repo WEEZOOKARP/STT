@@ -99,6 +99,7 @@ public class gunController : MonoBehaviour
 
     private void TryShoot()
     {
+        animator.SetTrigger("PRESS");
         if (ammo.currentAmmo > 0)
         {
             FireWeapon();
