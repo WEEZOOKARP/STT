@@ -2,44 +2,34 @@ using UnityEngine;
 
 public class Bullet : MonoBehaviour
 {
-    public GameObject bulletImpactPrefab;
+    public GameObject bulletImpactPrefab, bloodMistPrefab;
 
-    private void OnCollisionEnter(Collision collision)
+    void OnCollisionEnter(Collision c)
     {
-        if (collision.gameObject.CompareTag("Enemy"))
+        if (c.gameObject.CompareTag("shootableObject") || c.gameObject.CompareTag("Wall"))
         {
-            Debug.Log($"Hit {collision.gameObject.name}!");
-            CreateBulletEffect(collision);
-            Destroy(gameObject, 0.05f); // small delay for safety
+            Debug.Log($"Hit {c.gameObject.name}!");
+            CreateEffect(c, bulletImpactPrefab);
         }
-        else if (collision.gameObject.CompareTag("Wall"))
+        else if (c.gameObject.CompareTag("Enemy"))
         {
-            Debug.Log("Hit a wall");
-            CreateBulletEffect(collision);
-            Destroy(gameObject, 0.05f);
+            Debug.Log($"Hit {c.gameObject.name}!");
+            CreateEffect(c, bloodMistPrefab);
         }
+        Destroy(gameObject, 0.05f);
     }
 
-    private void CreateBulletEffect(Collision collision)
+    void CreateEffect(Collision c, GameObject prefab)
     {
-        if (bulletImpactPrefab == null)
-        {
-            Debug.LogError("Bullet impact prefab is NOT assigned!");
-            return;
-        }
+        if (!prefab) { Debug.LogError("Impact prefab not assigned!"); return; }
 
-        // Slight offset to avoid the hole being hidden inside the surface
-        ContactPoint contact = collision.contacts[0];
-        Vector3 spawnPos = contact.point + contact.normal * 0.01f;
+        ContactPoint contact = c.contacts[0];
+        GameObject fx = Instantiate(prefab,
+            contact.point + contact.normal * 0.01f,
+            Quaternion.LookRotation(contact.normal));
 
-        GameObject hole = Instantiate(
-            bulletImpactPrefab,
-            spawnPos,
-            Quaternion.LookRotation(contact.normal)
-        );
-
-        // Optional: Parent to hit object only if needed (e.g., moving enemy)
-        if (!collision.gameObject.CompareTag("Wall"))
-            hole.transform.SetParent(collision.transform);
+        if (!c.gameObject.CompareTag("Wall"))
+            fx.transform.SetParent(c.transform);
     }
 }
+
