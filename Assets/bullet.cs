@@ -3,6 +3,7 @@ using UnityEngine;
 public class Bullet : MonoBehaviour
 {
     public GameObject bulletImpactPrefab, bloodMistPrefab;
+    public int damage;
 
     void OnCollisionEnter(Collision c)
     {
@@ -15,6 +16,11 @@ public class Bullet : MonoBehaviour
         {
             Debug.Log($"Hit {c.gameObject.name}!");
             CreateEffect(c, bloodMistPrefab);
+            EnemyBehavior enemy = c.gameObject.GetComponent<EnemyBehavior>();
+            if (enemy != null)
+            {
+                enemy.TakeDamage(damage);
+            }
         }
         Destroy(gameObject, 0.05f);
     }
