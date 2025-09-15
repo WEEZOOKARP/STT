@@ -4,7 +4,14 @@ using System.Collections.Generic;
 
 public class Bullet : MonoBehaviour
 {
+<<<<<<< Updated upstream
     private void OnCollisionEnter(Collision collision)
+=======
+    public GameObject bulletImpactPrefab, bloodMistPrefab;
+    public int damage=10;
+
+    void OnCollisionEnter(Collision c)
+>>>>>>> Stashed changes
     {
         if (collision.gameObject.CompareTag("Enemy"))
         {
