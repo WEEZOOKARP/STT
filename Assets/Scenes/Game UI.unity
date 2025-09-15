@@ -31549,6 +31549,7 @@ MonoBehaviour:
   detectionRange: 10
   attackRange: 2
   attackCooldown: 1
+  animator: {fileID: 6333385572357606207}
 --- !u!136 &6333385572357606209
 CapsuleCollider:
   m_ObjectHideFlags: 0
