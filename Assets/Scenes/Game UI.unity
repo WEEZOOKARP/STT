@@ -25315,7 +25315,7 @@ Animator:
   m_GameObject: {fileID: 1411735397704243940}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 2ace6ae12e1764592941619127da3513, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -51525,14 +51525,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3931448590082952954}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.045706864, y: -0.026880594, z: 0.0076831426, w: 0.99856365}
-  m_LocalPosition: {x: 2.15, y: -2.35, z: 1.39}
-  m_LocalScale: {x: 15, y: 15, z: 8}
+  m_LocalRotation: {x: -0.17649348, y: -0.027656972, z: 0.004085211, w: 0.9839047}
+  m_LocalPosition: {x: 1.94, y: -2.24, z: 2.04}
+  m_LocalScale: {x: 18, y: 18, z: 5}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5567217954200480979}
   m_Father: {fileID: 1676570749}
-  m_LocalEulerAnglesHint: {x: -5.214, y: -3.131, z: 1.024}
+  m_LocalEulerAnglesHint: {x: -20.309, y: -3.415, z: 1.088}
 --- !u!82 &4450857176145761345
 AudioSource:
   m_ObjectHideFlags: 0
@@ -51669,7 +51669,7 @@ Animator:
   m_GameObject: {fileID: 3931448590082952954}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 7912137a45cc64658a8c1ef5d06aae0f, type: 2}
+  m_Controller: {fileID: 9100000, guid: 21ccf6686f6e443c79008c1321d8b56c, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
