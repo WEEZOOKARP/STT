@@ -73,3 +73,6 @@ Thumbs.db
 *.swp
 *.lock
 *.pid
+*.meta
+*.fbx
+*.prefab
