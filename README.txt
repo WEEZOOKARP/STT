@@ -4,3 +4,4 @@ git add .gitattributes
 git commit -m "Configure Git LFS for large Unity assets"
 git push
 
+test
