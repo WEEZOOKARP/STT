@@ -131,7 +131,9 @@ public class WaveManager : MonoBehaviour
                 speed = 3f,
                 damage = 10,
                 spawnWeight = 1f,
-                difficultyCost = 1
+                difficultyCost = 1,
+                lootTableName = "BasicEnemy",
+                lootDropChance = 0.25f
             });
 
             RegisterEnemyEntry(new FactionEnemyEntry
@@ -141,7 +143,9 @@ public class WaveManager : MonoBehaviour
                 speed = 5f,
                 damage = 5,
                 spawnWeight = 0.7f,
-                difficultyCost = 1
+                difficultyCost = 1,
+                lootTableName = "FastEnemy",
+                lootDropChance = 0.35f
             });
 
             RegisterEnemyEntry(new FactionEnemyEntry
@@ -151,7 +155,9 @@ public class WaveManager : MonoBehaviour
                 speed = 2f,
                 damage = 15,
                 spawnWeight = 0.5f,
-                difficultyCost = 2
+                difficultyCost = 2,
+                lootTableName = "TankEnemy",
+                lootDropChance = 0.4f
             });
 
             RegisterEnemyEntry(new FactionEnemyEntry
@@ -164,7 +170,10 @@ public class WaveManager : MonoBehaviour
                 isBoss = true,
                 difficultyCost = 10,
                 minWave = bossWaveInterval,
-                maxPerWave = 1
+                maxPerWave = 1,
+                lootTableName = "BasicBoss",
+                lootDropChance = 1f,
+                bossLootTableName = "BasicBoss"
             });
         }
     }
