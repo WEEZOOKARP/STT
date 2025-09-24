@@ -3236,6 +3236,8 @@ MonoBehaviour:
   mouseSensitivity: 150
   playerCamera: {fileID: 2068765136}
   cameraParent: {fileID: 1701654102}
+  weapons: []
+  minSwipeDistance: 50
 --- !u!1 &1701654097
 GameObject:
   m_ObjectHideFlags: 0
@@ -25291,6 +25293,7 @@ MonoBehaviour:
   bulletSpawn: {fileID: 1593960456}
   bulletSpeed: 500
   bulletLifeTime: 2
+  damage: 5
   spreadAngle: 0
   pelletCount: 1
   cooldownTime: 0.05
@@ -51645,6 +51648,7 @@ MonoBehaviour:
   bulletSpawn: {fileID: 336915188}
   bulletSpeed: 1200
   bulletLifeTime: 0.3
+  damage: 10
   spreadAngle: 15
   pelletCount: 20
   cooldownTime: 2
@@ -67251,7 +67255,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c5c4c57e994254ccb97b3828b88ec9bf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 50
+  maxHealth: 150
   moveSpeed: 3
   damage: 10
   isBoss: 0
@@ -107684,6 +107688,7 @@ MonoBehaviour:
   bulletSpawn: {fileID: 855478756932887761}
   bulletSpeed: 1500
   bulletLifeTime: 0.3
+  damage: 10
   spreadAngle: 0
   pelletCount: 1
   cooldownTime: 0.3

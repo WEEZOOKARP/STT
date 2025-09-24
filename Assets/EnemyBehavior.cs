@@ -41,7 +41,7 @@ public class EnemyBehavior : MonoBehaviour
     public string LootTableName => lootTableName;
     public string BossLootTableName => string.IsNullOrEmpty(bossLootTableName) ? lootTableName : bossLootTableName;
     public float LootDropChance => Mathf.Clamp01(lootDropChance);
-    
+
     public void Initialize(EnemyType enemyType)
     {
         maxHealth = enemyType.health;
@@ -149,8 +149,8 @@ public class EnemyBehavior : MonoBehaviour
     public void TakeDamage(int damage)
     {
         if (isDead) return;
-        
         currentHealth -= damage;
+        Debug.Log($"{gameObject.name} take {damage} damage! Current HP {currentHealth}");
         
         // Visual feedback
         StartCoroutine(DamageFlash());
@@ -192,7 +192,7 @@ public class EnemyBehavior : MonoBehaviour
     void Die()
 {
     isDead = true;
-
+    Debug.Log($"{gameObject.name} die!");
     // Stop movement & collisions
     if (agent) agent.enabled = false;
     Collider col = GetComponent<Collider>();

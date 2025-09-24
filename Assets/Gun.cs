@@ -8,6 +8,7 @@ public class Gun : MonoBehaviour
     public Transform bulletSpawn;
     public float bulletSpeed = 500f;
     public float bulletLifeTime = 2f;
+    public int damage=10;
 
     [Header("Spread Settings")]
     [Tooltip("Maximum angle (degrees) bullets can deviate from forward direction.")]
@@ -125,6 +126,11 @@ public class Gun : MonoBehaviour
             Vector3 spreadDir = ApplySpread(baseDirection);
             GameObject bullet = Instantiate(bulletPrefab, bulletSpawn.position,
                                             Quaternion.LookRotation(spreadDir));
+            Bullet bulletScript = bullet.GetComponent<Bullet>();
+            if (bulletScript != null)
+            {
+              bulletScript.damage = damage;
+            }
             bullet.GetComponent<Rigidbody>()
                   .AddForce(spreadDir * bulletSpeed, ForceMode.Impulse);
             StartCoroutine(DestroyBulletAfterTime(bullet));
