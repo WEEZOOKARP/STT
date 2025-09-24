@@ -17,7 +17,10 @@ public class Status : MonoBehaviour
         
         // Initialize player health
         playerHealth = maxHealth;
-        healthBar.SetMaxHealth(maxHealth);
+        if (healthBar != null)
+        {
+            healthBar.SetMaxHealth(maxHealth);
+        }
     }
     
     void ApplyMetaProgressionBonuses()
@@ -48,7 +51,10 @@ public class Status : MonoBehaviour
         {
             playerHealth = maxHealth;
         }
-        healthBar.SetHealth(playerHealth);
+        if (healthBar != null)
+        {
+            healthBar.SetHealth(playerHealth);
+        }
     }
 
     public void TakeDamage(int amount)
@@ -59,7 +65,10 @@ public class Status : MonoBehaviour
             playerHealth = 0;
             killPlayer("Enemy Collision");
         }
-        healthBar.SetHealth(playerHealth);
+        if (healthBar != null)
+        {
+            healthBar.SetHealth(playerHealth);
+        }
     }
 
     private void killPlayer(String cause)

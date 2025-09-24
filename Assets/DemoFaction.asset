@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad2902f69450f46008a9d3c1f9ba67ca, type: 3}
+  m_Name: DemoFaction
+  m_EditorClassIdentifier: 
+  factionName: Default
+  enemies:
+  - displayName: Grunt
+    prefab: {fileID: 100000, guid: 17dde83c07094bbc8c82ae9c86fedf73, type: 3}
+    health: 80
+    speed: 3.20000005
+    damage: 12
+    isBoss: 0
+    lootTableName: Grunt
+    lootDropChance: 0.349999994
+    bossLootTableName: CommanderBoss
+    spawnWeight: 3
+    minWave: 1
+    maxWave: 999
+    maxPerWave: -1
+    difficultyCost: 1
+  - displayName: Runner
+    prefab: {fileID: 200000, guid: 84a7cee9998e46ef9b4037b9556b1f3e, type: 3}
+    health: 55
+    speed: 5.5
+    damage: 8
+    isBoss: 0
+    lootTableName: Runner
+    lootDropChance: 0.25
+    bossLootTableName: CommanderBoss
+    spawnWeight: 1.5
+    minWave: 2
+    maxWave: 999
+    maxPerWave: -1
+    difficultyCost: 1
+  - displayName: Commander
+    prefab: {fileID: 300000, guid: d93093175f0b4de99a917bc7ad5efe82, type: 3}
+    health: 250
+    speed: 2.25
+    damage: 30
+    isBoss: 1
+    lootTableName: Commander
+    lootDropChance: 1
+    bossLootTableName: CommanderBoss
+    spawnWeight: 0.100000001
+    minWave: 5
+    maxWave: 999
+    maxPerWave: 1
+    difficultyCost: 12

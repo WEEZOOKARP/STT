@@ -73,7 +73,7 @@ public class LootSystem : MonoBehaviour
     
     [Header("Loot Settings")]
     public List<LootItem> allLootItems = new List<LootItem>();
-    public List<LootTable> bossLootTables = new List<LootTable>();
+    public List<LootTable> lootTables = new List<LootTable>();
     public GameObject lootDropPrefab;
     public float lootDropForce = 5f;
     public float lootDropRadius = 3f;
@@ -113,14 +113,14 @@ public class LootSystem : MonoBehaviour
             CreateDefaultLootItems();
         }
         
-        // Create default boss loot tables
-        if (bossLootTables.Count == 0)
+        // Create default loot tables
+        if (lootTables.Count == 0)
         {
-            CreateDefaultBossLootTables();
+            CreateDefaultLootTables();
         }
         
         // Build lookup dictionary
-        foreach (LootTable table in bossLootTables)
+        foreach (LootTable table in lootTables)
         {
             lootTableLookup[table.tableName] = table;
         }
@@ -128,7 +128,7 @@ public class LootSystem : MonoBehaviour
     
     void CreateDefaultLootItems()
     {
-        // Common items
+        // Common items - basic consumables
         allLootItems.Add(new LootItem("Health Potion", "Restores 50 health", LootRarity.Common)
         {
             healthBonus = 50,
@@ -141,7 +141,13 @@ public class LootSystem : MonoBehaviour
             metaCurrencyReward = 15
         });
         
-        // Uncommon items
+        allLootItems.Add(new LootItem("Energy Drink", "Temporary speed boost", LootRarity.Common)
+        {
+            speedBonus = 1f,
+            metaCurrencyReward = 12
+        });
+        
+        // Uncommon items - basic equipment
         allLootItems.Add(new LootItem("Combat Knife", "Sharp blade for close combat", LootRarity.Uncommon)
         {
             damageBonus = 15,
@@ -155,7 +161,13 @@ public class LootSystem : MonoBehaviour
             metaCurrencyReward = 30
         });
         
-        // Rare items
+        allLootItems.Add(new LootItem("Tactical Scope", "Improved accuracy", LootRarity.Uncommon)
+        {
+            criticalChanceBonus = 0.1f,
+            metaCurrencyReward = 28
+        });
+        
+        // Rare items - special effects
         allLootItems.Add(new LootItem("Vampiric Blade", "Steals life from enemies", LootRarity.Rare)
         {
             damageBonus = 25,
@@ -172,7 +184,15 @@ public class LootSystem : MonoBehaviour
             skillPointsReward = 1
         });
         
-        // Epic items
+        allLootItems.Add(new LootItem("Piercing Ammo", "Bullets go through enemies", LootRarity.Rare)
+        {
+            damageBonus = 18,
+            hasPiercingShots = true,
+            metaCurrencyReward = 55,
+            skillPointsReward = 1
+        });
+        
+        // Epic items - powerful equipment
         allLootItems.Add(new LootItem("Plasma Rifle", "Advanced energy weapon", LootRarity.Epic)
         {
             damageBonus = 40,
@@ -192,7 +212,16 @@ public class LootSystem : MonoBehaviour
             experienceReward = 75f
         });
         
-        // Legendary items
+        allLootItems.Add(new LootItem("Quantum Boots", "Enhanced mobility", LootRarity.Epic)
+        {
+            speedBonus = 2f,
+            criticalChanceBonus = 0.15f,
+            metaCurrencyReward = 110,
+            skillPointsReward = 2,
+            experienceReward = 60f
+        });
+        
+        // Legendary items - game-changing equipment
         allLootItems.Add(new LootItem("Dragon's Breath", "Legendary weapon of destruction", LootRarity.Legendary)
         {
             damageBonus = 75,
@@ -214,11 +243,119 @@ public class LootSystem : MonoBehaviour
             skillPointsReward = 5,
             experienceReward = 200f
         });
+        
+        allLootItems.Add(new LootItem("Chronos Gauntlets", "Manipulates time itself", LootRarity.Legendary)
+        {
+            damageBonus = 60,
+            speedBonus = 1.5f,
+            criticalChanceBonus = 0.3f,
+            hasRapidFire = true,
+            metaCurrencyReward = 300,
+            skillPointsReward = 5,
+            experienceReward = 250f
+        });
     }
     
-    void CreateDefaultBossLootTables()
+    void CreateDefaultLootTables()
     {
-        // Basic Boss Loot Table
+        // Basic Enemy Loot Table - minimal drops, mostly common items
+        LootTable basicEnemyTable = new LootTable
+        {
+            tableName = "BasicEnemy",
+            guaranteedDrops = 0,
+            maxRandomDrops = 1,
+            dropChance = 0.25f // 25% chance to drop anything
+        };
+
+        // Only add common and uncommon items to basic enemies
+        foreach (LootItem item in allLootItems)
+        {
+            if (item.rarity <= LootRarity.Uncommon)
+            {
+                float baseChance = GetRarityDropChance(item.rarity);
+                basicEnemyTable.possibleDrops.Add(new LootDrop
+                {
+                    item = item,
+                    dropChance = baseChance,
+                    minQuantity = 1,
+                    maxQuantity = 1
+                });
+            }
+        }
+
+        lootTables.Add(basicEnemyTable);
+
+        // Fast Enemy Loot Table - speed-focused drops
+        LootTable fastEnemyTable = new LootTable
+        {
+            tableName = "FastEnemy",
+            guaranteedDrops = 0,
+            maxRandomDrops = 1,
+            dropChance = 0.35f
+        };
+
+        // Fast enemies drop speed-related items more often
+        foreach (LootItem item in allLootItems)
+        {
+            float baseChance = GetRarityDropChance(item.rarity);
+            
+            // Boost speed-related items
+            if (item.speedBonus > 0 || item.name.Contains("Energy") || item.name.Contains("Quantum"))
+            {
+                baseChance *= 2f;
+            }
+            
+            // Limit to uncommon and below for regular enemies
+            if (item.rarity <= LootRarity.Uncommon)
+            {
+                fastEnemyTable.possibleDrops.Add(new LootDrop
+                {
+                    item = item,
+                    dropChance = baseChance,
+                    minQuantity = 1,
+                    maxQuantity = 1
+                });
+            }
+        }
+
+        lootTables.Add(fastEnemyTable);
+
+        // Tank Enemy Loot Table - defense-focused drops
+        LootTable tankEnemyTable = new LootTable
+        {
+            tableName = "TankEnemy",
+            guaranteedDrops = 0,
+            maxRandomDrops = 1,
+            dropChance = 0.4f
+        };
+
+        // Tank enemies drop defense-related items more often
+        foreach (LootItem item in allLootItems)
+        {
+            float baseChance = GetRarityDropChance(item.rarity);
+            
+            // Boost defense-related items
+            if (item.healthBonus > 0 || item.name.Contains("Armor") || item.name.Contains("Shield"))
+            {
+                baseChance *= 2f;
+            }
+            
+            // Limit to uncommon and below for regular enemies
+            if (item.rarity <= LootRarity.Uncommon)
+            {
+                tankEnemyTable.possibleDrops.Add(new LootDrop
+                {
+                    item = item,
+                    dropChance = baseChance,
+                    minQuantity = 1,
+                    maxQuantity = 1
+                });
+            }
+        }
+
+        lootTables.Add(tankEnemyTable);
+
+        // Basic Boss Loot Table - guaranteed good drops
         LootTable basicBossTable = new LootTable
         {
             tableName = "BasicBoss",
@@ -227,10 +364,17 @@ public class LootSystem : MonoBehaviour
             dropChance = 0.8f
         };
         
-        // Add drops to basic boss table
+        // Bosses can drop rare+ items
         foreach (LootItem item in allLootItems)
         {
             float baseChance = GetRarityDropChance(item.rarity);
+            
+            // Boost rare+ items for bosses
+            if (item.rarity >= LootRarity.Rare)
+            {
+                baseChance *= 1.5f;
+            }
+            
             basicBossTable.possibleDrops.Add(new LootDrop
             {
                 item = item,
@@ -240,9 +384,9 @@ public class LootSystem : MonoBehaviour
             });
         }
         
-        bossLootTables.Add(basicBossTable);
+        lootTables.Add(basicBossTable);
         
-        // Elite Boss Loot Table (better drops)
+        // Elite Boss Loot Table - premium drops
         LootTable eliteBossTable = new LootTable
         {
             tableName = "EliteBoss",
@@ -251,13 +395,22 @@ public class LootSystem : MonoBehaviour
             dropChance = 1f
         };
         
-        // Elite bosses have better chances for rare+ items
+        // Elite bosses heavily favor rare+ items
         foreach (LootItem item in allLootItems)
         {
             float baseChance = GetRarityDropChance(item.rarity);
+            
             if (item.rarity >= LootRarity.Rare)
             {
-                baseChance *= legendaryDropChanceMultiplier;
+                baseChance *= legendaryDropChanceMultiplier * 2f; // Double boost for elite bosses
+            }
+            else if (item.rarity == LootRarity.Uncommon)
+            {
+                baseChance *= 0.5f; // Reduce common/uncommon drops
+            }
+            else
+            {
+                baseChance *= 0.2f; // Heavily reduce common drops
             }
             
             eliteBossTable.possibleDrops.Add(new LootDrop
@@ -269,7 +422,7 @@ public class LootSystem : MonoBehaviour
             });
         }
         
-        bossLootTables.Add(eliteBossTable);
+        lootTables.Add(eliteBossTable);
     }
     
     float GetRarityDropChance(LootRarity rarity)
@@ -287,15 +440,20 @@ public class LootSystem : MonoBehaviour
     
     public void DropBossLoot(Vector3 position, string bossType = "BasicBoss")
     {
-        LootTable lootTable = GetLootTable(bossType);
+        DropLoot(position, bossType);
+    }
+
+    public void DropLoot(Vector3 position, string tableName)
+    {
+        LootTable lootTable = GetLootTable(tableName);
         if (lootTable == null)
         {
-            Debug.LogWarning($"No loot table found for boss type: {bossType}");
+            Debug.LogWarning($"No loot table found for table: {tableName}");
             return;
         }
-        
+
         List<LootItem> droppedItems = GenerateLootDrops(lootTable);
-        
+
         // Spawn loot drops
         foreach (LootItem item in droppedItems)
         {
@@ -305,7 +463,7 @@ public class LootSystem : MonoBehaviour
         // Apply meta progression rewards
         ApplyMetaProgressionRewards(droppedItems);
         
-        Debug.Log($"Boss defeated! Dropped {droppedItems.Count} items.");
+        Debug.Log($"LootSystem: Dropped {droppedItems.Count} items from table '{tableName}'.");
     }
     
     LootTable GetLootTable(string tableName)
@@ -316,7 +474,7 @@ public class LootSystem : MonoBehaviour
         }
         
         // Fallback to first available table
-        return bossLootTables.Count > 0 ? bossLootTables[0] : null;
+        return lootTables.Count > 0 ? lootTables[0] : null;
     }
     
     List<LootItem> GenerateLootDrops(LootTable lootTable)
@@ -462,12 +620,12 @@ public class LootSystem : MonoBehaviour
     
     public void AddLootTable(LootTable table)
     {
-        bossLootTables.Add(table);
+        lootTables.Add(table);
         lootTableLookup[table.tableName] = table;
     }
-    
+
     public List<LootItem> GetAllLootItems() => new List<LootItem>(allLootItems);
-    public List<LootTable> GetAllLootTables() => new List<LootTable>(bossLootTables);
+    public List<LootTable> GetAllLootTables() => new List<LootTable>(lootTables);
 }
 
 // Component for loot drop behavior
