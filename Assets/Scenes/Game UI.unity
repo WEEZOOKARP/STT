@@ -14625,7 +14625,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 73350945400443205}
-  - component: {fileID: 6333385572357606207}
   - component: {fileID: 6333385572357606209}
   - component: {fileID: 6333385572357606208}
   m_Layer: 8
@@ -67240,28 +67239,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!95 &6333385572357606207
-Animator:
-  serializedVersion: 7
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 742892621826362367}
-  m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: ba6ea7e6ec90244919722d55ca6a8c58, type: 3}
-  m_Controller: {fileID: 9100000, guid: 655da95963f9e4b2eaea8617b52731b2, type: 2}
-  m_CullingMode: 1
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 1
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_AnimatePhysics: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
 --- !u!114 &6333385572357606208
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -67281,7 +67258,10 @@ MonoBehaviour:
   detectionRange: 10
   attackRange: 2
   attackCooldown: 1
-  animator: {fileID: 6333385572357606207}
+  strongholdTarget: {fileID: 0}
+  strongholdTag: Base
+  playerDetectionTarget: {fileID: 0}
+  repathInterval: 0.25
 --- !u!136 &6333385572357606209
 CapsuleCollider:
   m_ObjectHideFlags: 0

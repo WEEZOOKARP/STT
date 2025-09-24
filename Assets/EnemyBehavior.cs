@@ -162,30 +162,36 @@ public class EnemyBehavior : MonoBehaviour
     }
     
     System.Collections.IEnumerator DamageFlash()
+{
+    Renderer[] renderers = GetComponentsInChildren<Renderer>();
+    Color[] originalColors = new Color[renderers.Length];
+
+    for (int i = 0; i < renderers.Length; i++)
     {
-        Renderer[] renderers = GetComponentsInChildren<Renderer>();
-        Color[] originalColors = new Color[renderers.Length];
-        
-        // Store original colors
-        for (int i = 0; i < renderers.Length; i++)
+        Material mat = renderers[i].material;
+        if (mat.HasProperty("_Color"))
         {
-            originalColors[i] = renderers[i].material.color;
-            renderers[i].material.color = Color.white;
-        }
-        
-        yield return new WaitForSeconds(0.1f);
-        
-        // Restore original colors
-        for (int i = 0; i < renderers.Length; i++)
-        {
-            renderers[i].material.color = originalColors[i];
+            originalColors[i] = mat.color;
+            mat.color = Color.white;
         }
     }
+
+    yield return new WaitForSeconds(0.1f);
+
+    for (int i = 0; i < renderers.Length; i++)
+    {
+        Material mat = renderers[i].material;
+        if (mat.HasProperty("_Color"))
+        {
+            mat.color = originalColors[i];
+        }
+    }
+}
+
 
     void Die()
 {
     isDead = true;
-    animator.SetTrigger("DEATH");
 
     // Stop movement & collisions
     if (agent) agent.enabled = false;
@@ -207,9 +213,7 @@ public class EnemyBehavior : MonoBehaviour
 
     OnDeath?.Invoke(gameObject);
 
-    // ✅ Wait for animation length
-    float deathTime = animator.GetCurrentAnimatorStateInfo(0).length;
-    Destroy(gameObject, deathTime + 0.2f);
+    Destroy(gameObject);
 }
 
     
