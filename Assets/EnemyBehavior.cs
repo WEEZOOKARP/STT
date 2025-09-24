@@ -3,6 +3,8 @@ using UnityEngine.AI;
 
 public class EnemyBehavior : MonoBehaviour
 {
+    private Animator animator;
+
     [Header("Enemy Stats")]
     public int maxHealth = 50;
     public float moveSpeed = 3f;
