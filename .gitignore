@@ -1,5 +1,5 @@
 # =============== #
-# Unity generated #
+# Unity Generated #
 # =============== #
 [Ll]ibrary/
 [Tt]emp/
@@ -7,39 +7,72 @@
 [Bb]uild/
 [Bb]uilds/
 [Ll]ogs/
+[Uu]ser[Ss]ettings/
 [Mm]emoryCaptures/
-UserSettings/
-sysinfo.txt
-*.cs.meta
+[Rr]ecordings/
 
-# ============ #
-# OS generated #
-# ============ #
+# Crash reports
+sysinfo.txt
+
+# =============== #
+# OS Generated    #
+# =============== #
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# ============== #
-# Visual Studio  #
-# ============== #
+# =============== #
+# IDE Generated   #
+# =============== #
 .vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# JetBrains Rider
+/[Aa]ssets/Plugins/Editor/JetBrains*
+*.iml
+
+# Visual Studio
 *.csproj
 *.unityproj
 *.sln
-*.suo
+*.vs
+.vsconfig
+
+# =============== #
+# Unity Asset Cache#
+# =============== #
+/[Aa]ssets/AssetStoreTools*
+/[Aa]ssets/AddressableAssetsData*
+/[Aa]ssets/StreamingAssets/aa/*
+
+# =============== #
+# Builds          #
+# =============== #
+*.apk
+*.aab
+*.app
+*.exe
+*.xcodeproj
+*.xcworkspace
+*.ipa
+
+# =============== #
+# Other           #
+# =============== #
+*.log
+*.bak
 *.tmp
-*.user
-*.userprefs
-*.pidb
-*.booproj
-*.svd
-
-# ============ #
-# JetBrains IDE #
-# ============ #
-.idea/
-*.iml
-
-# =============== #
-# Rider/VS Cache  #
-# =============== #
-.vs
+*.swp
+*.lock
+*.pid
+*.meta
+*.fbx
+*.prefab

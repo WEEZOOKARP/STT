@@ -4,8 +4,6 @@
 TagManager:
   serializedVersion: 3
   tags:
-  - Base
-  - Enemy
   layers:
   - Default
   - TransparentFX
@@ -15,6 +13,10 @@ TagManager:
   - UI
   - 
   - 
+  - Walkable
+  - SimEnv
+  - 
+  - ARPlane
   - 
   - 
   - 
@@ -33,11 +35,7 @@ TagManager:
   - 
   - 
   - 
-  - 
-  - 
-  - 
-  - 
-  - 
+  - XR Simulation
   - 
   m_SortingLayers:
   - name: Default

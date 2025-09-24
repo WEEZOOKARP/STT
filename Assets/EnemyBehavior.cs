@@ -183,29 +183,35 @@ public class EnemyBehavior : MonoBehaviour
     }
 
     void Die()
+{
+    isDead = true;
+    animator.SetTrigger("DEATH");
+
+    // Stop movement & collisions
+    if (agent) agent.enabled = false;
+    Collider col = GetComponent<Collider>();
+    if (col) col.enabled = false;
+
+    // Reward player
+    Leveling playerLeveling = player?.GetComponent<Leveling>();
+    if (playerLeveling != null)
     {
-        isDead = true;
-        
-        // Give experience to player
-        Leveling playerLeveling = player?.GetComponent<Leveling>();
-        if (playerLeveling != null)
-        {
-            float expReward = isBoss ? 100f : 20f;
-            playerLeveling.AddExperience(expReward);
-        }
-        
-        // Track enemy death in meta progression
-        if (MetaProgression.Instance != null)
-        {
-            MetaProgression.Instance.KillEnemy(gameObject.name, isBoss);
-        }
-        
-        // Trigger death event
-        OnDeath?.Invoke(gameObject);
-        
-        // Destroy the enemy
-        Destroy(gameObject, 0.1f);
+        float expReward = isBoss ? 100f : 20f;
+        playerLeveling.AddExperience(expReward);
     }
+
+    if (MetaProgression.Instance != null)
+    {
+        MetaProgression.Instance.KillEnemy(gameObject.name, isBoss);
+    }
+
+    OnDeath?.Invoke(gameObject);
+
+    // ✅ Wait for animation length
+    float deathTime = animator.GetCurrentAnimatorStateInfo(0).length;
+    Destroy(gameObject, deathTime + 0.2f);
+}
+
     
     void OnCollisionEnter(Collision collision)
     {
