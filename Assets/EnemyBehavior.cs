@@ -13,17 +13,34 @@ public class EnemyBehavior : MonoBehaviour
     public float detectionRange = 10f;
     public float attackRange = 2f;
     public float attackCooldown = 1f;
+
+    [Header("Navigation Targets")]
+    [Tooltip("Where the enemy marches when the player is not nearby.")]
+    [SerializeField] private Transform strongholdTarget;
+    [Tooltip("Scene tag used to auto-find the stronghold when no reference is assigned.")]
+    [SerializeField] private string strongholdTag = "Base";
+    [Tooltip("Optional anchor (e.g. invisible child) that represents the player's detection point.")]
+    [SerializeField] private Transform playerDetectionTarget;
+    [Tooltip("Minimum seconds between path recalculations to reduce jitter.")]
+    [SerializeField] private float repathInterval = 0.25f;
     
     private int currentHealth;
     private Transform player;
     private NavMeshAgent agent;
     private float lastAttackTime;
+    private float lastDestinationUpdateTime;
     private bool isDead = false;
-    
+    private string lootTableName;
+    private float lootDropChance = 0f;
+    private string bossLootTableName;
+
     // Events
     public System.Action<GameObject> OnDeath;
-    
+
     public bool IsBoss => isBoss;
+    public string LootTableName => lootTableName;
+    public string BossLootTableName => string.IsNullOrEmpty(bossLootTableName) ? lootTableName : bossLootTableName;
+    public float LootDropChance => Mathf.Clamp01(lootDropChance);
     
     public void Initialize(EnemyType enemyType)
     {
@@ -31,15 +48,14 @@ public class EnemyBehavior : MonoBehaviour
         moveSpeed = enemyType.speed;
         damage = enemyType.damage;
         isBoss = enemyType.isBoss;
-        
+        lootTableName = enemyType.lootTableName;
+        lootDropChance = enemyType.lootDropChance;
+        bossLootTableName = enemyType.bossLootTableName;
+
         currentHealth = maxHealth;
-        
-        // Find player
-        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-        if (playerObj != null)
-        {
-            player = playerObj.transform;
-        }
+
+        TryCachePlayer();
+        AutoAssignStronghold();
         
         // Setup NavMeshAgent
         agent = GetComponent<NavMeshAgent>();
@@ -83,21 +99,36 @@ public class EnemyBehavior : MonoBehaviour
     
     void Update()
     {
-        if (isDead || player == null) return;
-        
-        // Check distance to player
-        float distanceToPlayer = Vector3.Distance(transform.position, player.position);
-        
-        if (distanceToPlayer <= detectionRange)
+        if (isDead)
         {
-            // Move towards player
-            agent.SetDestination(player.position);
-            
-            // Attack if in range
-            if (distanceToPlayer <= attackRange && Time.time >= lastAttackTime + attackCooldown)
-            {
-                AttackPlayer();
-            }
+            return;
+        }
+
+        if (player == null)
+        {
+            TryCachePlayer();
+        }
+
+        Transform detectionTarget = GetDetectionTarget();
+        float distanceToPlayer = detectionTarget != null
+            ? Vector3.Distance(transform.position, detectionTarget.position)
+            : float.MaxValue;
+
+        Transform destination = strongholdTarget;
+        if (detectionTarget != null && distanceToPlayer <= detectionRange)
+        {
+            destination = detectionTarget;
+        }
+
+        if (agent != null && destination != null && Time.time >= lastDestinationUpdateTime + repathInterval)
+        {
+            agent.SetDestination(destination.position);
+            lastDestinationUpdateTime = Time.time;
+        }
+
+        if (player != null && distanceToPlayer <= attackRange && Time.time >= lastAttackTime + attackCooldown)
+        {
+            AttackPlayer();
         }
     }
     
@@ -114,7 +145,7 @@ public class EnemyBehavior : MonoBehaviour
         
         Debug.Log($"{gameObject.name} attacked player for {damage} damage!");
     }
-    
+
     public void TakeDamage(int damage)
     {
         if (isDead) return;
@@ -150,7 +181,7 @@ public class EnemyBehavior : MonoBehaviour
             renderers[i].material.color = originalColors[i];
         }
     }
-    
+
     void Die()
     {
         isDead = true;
@@ -184,7 +215,7 @@ public class EnemyBehavior : MonoBehaviour
             AttackPlayer();
         }
     }
-    
+
     void OnDrawGizmosSelected()
     {
         // Draw detection range
@@ -194,5 +225,59 @@ public class EnemyBehavior : MonoBehaviour
         // Draw attack range
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, attackRange);
+    }
+
+    public void ConfigureTargets(Transform stronghold, Transform detectionAnchor)
+    {
+        strongholdTarget = stronghold != null ? stronghold : strongholdTarget;
+        if (detectionAnchor != null)
+        {
+            playerDetectionTarget = detectionAnchor;
+        }
+    }
+
+    void TryCachePlayer()
+    {
+        if (player != null) return;
+
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+        if (playerObj != null)
+        {
+            player = playerObj.transform;
+        }
+
+        if (playerDetectionTarget == null && player != null)
+        {
+            playerDetectionTarget = player;
+        }
+    }
+
+    void AutoAssignStronghold()
+    {
+        if (strongholdTarget != null || string.IsNullOrEmpty(strongholdTag))
+        {
+            return;
+        }
+
+        GameObject strongholdObj = GameObject.FindGameObjectWithTag(strongholdTag);
+        if (strongholdObj != null)
+        {
+            strongholdTarget = strongholdObj.transform;
+        }
+    }
+
+    Transform GetDetectionTarget()
+    {
+        if (playerDetectionTarget != null)
+        {
+            return playerDetectionTarget;
+        }
+
+        if (player != null)
+        {
+            return player;
+        }
+
+        return null;
     }
 }

@@ -73,7 +73,7 @@ public class LootSystem : MonoBehaviour
     
     [Header("Loot Settings")]
     public List<LootItem> allLootItems = new List<LootItem>();
-    public List<LootTable> bossLootTables = new List<LootTable>();
+    public List<LootTable> lootTables = new List<LootTable>();
     public GameObject lootDropPrefab;
     public float lootDropForce = 5f;
     public float lootDropRadius = 3f;
@@ -113,14 +113,14 @@ public class LootSystem : MonoBehaviour
             CreateDefaultLootItems();
         }
         
-        // Create default boss loot tables
-        if (bossLootTables.Count == 0)
+        // Create default loot tables
+        if (lootTables.Count == 0)
         {
-            CreateDefaultBossLootTables();
+            CreateDefaultLootTables();
         }
         
         // Build lookup dictionary
-        foreach (LootTable table in bossLootTables)
+        foreach (LootTable table in lootTables)
         {
             lootTableLookup[table.tableName] = table;
         }
@@ -216,8 +216,36 @@ public class LootSystem : MonoBehaviour
         });
     }
     
-    void CreateDefaultBossLootTables()
+    void CreateDefaultLootTables()
     {
+        // Standard enemy loot table (lighter rewards)
+        LootTable basicEnemyTable = new LootTable
+        {
+            tableName = "BasicEnemy",
+            guaranteedDrops = 0,
+            maxRandomDrops = 1,
+            dropChance = 0.35f
+        };
+
+        foreach (LootItem item in allLootItems)
+        {
+            float baseChance = GetRarityDropChance(item.rarity);
+            if (item.rarity > LootRarity.Uncommon)
+            {
+                baseChance *= 0.25f;
+            }
+
+            basicEnemyTable.possibleDrops.Add(new LootDrop
+            {
+                item = item,
+                dropChance = baseChance,
+                minQuantity = 1,
+                maxQuantity = 1
+            });
+        }
+
+        lootTables.Add(basicEnemyTable);
+
         // Basic Boss Loot Table
         LootTable basicBossTable = new LootTable
         {
@@ -240,7 +268,7 @@ public class LootSystem : MonoBehaviour
             });
         }
         
-        bossLootTables.Add(basicBossTable);
+        lootTables.Add(basicBossTable);
         
         // Elite Boss Loot Table (better drops)
         LootTable eliteBossTable = new LootTable
@@ -269,7 +297,7 @@ public class LootSystem : MonoBehaviour
             });
         }
         
-        bossLootTables.Add(eliteBossTable);
+        lootTables.Add(eliteBossTable);
     }
     
     float GetRarityDropChance(LootRarity rarity)
@@ -287,15 +315,20 @@ public class LootSystem : MonoBehaviour
     
     public void DropBossLoot(Vector3 position, string bossType = "BasicBoss")
     {
-        LootTable lootTable = GetLootTable(bossType);
+        DropLoot(position, bossType);
+    }
+
+    public void DropLoot(Vector3 position, string tableName)
+    {
+        LootTable lootTable = GetLootTable(tableName);
         if (lootTable == null)
         {
-            Debug.LogWarning($"No loot table found for boss type: {bossType}");
+            Debug.LogWarning($"No loot table found for table: {tableName}");
             return;
         }
-        
+
         List<LootItem> droppedItems = GenerateLootDrops(lootTable);
-        
+
         // Spawn loot drops
         foreach (LootItem item in droppedItems)
         {
@@ -305,7 +338,7 @@ public class LootSystem : MonoBehaviour
         // Apply meta progression rewards
         ApplyMetaProgressionRewards(droppedItems);
         
-        Debug.Log($"Boss defeated! Dropped {droppedItems.Count} items.");
+        Debug.Log($"LootSystem: Dropped {droppedItems.Count} items from table '{tableName}'.");
     }
     
     LootTable GetLootTable(string tableName)
@@ -316,7 +349,7 @@ public class LootSystem : MonoBehaviour
         }
         
         // Fallback to first available table
-        return bossLootTables.Count > 0 ? bossLootTables[0] : null;
+        return lootTables.Count > 0 ? lootTables[0] : null;
     }
     
     List<LootItem> GenerateLootDrops(LootTable lootTable)
@@ -462,12 +495,12 @@ public class LootSystem : MonoBehaviour
     
     public void AddLootTable(LootTable table)
     {
-        bossLootTables.Add(table);
+        lootTables.Add(table);
         lootTableLookup[table.tableName] = table;
     }
-    
+
     public List<LootItem> GetAllLootItems() => new List<LootItem>(allLootItems);
-    public List<LootTable> GetAllLootTables() => new List<LootTable>(bossLootTables);
+    public List<LootTable> GetAllLootTables() => new List<LootTable>(lootTables);
 }
 
 // Component for loot drop behavior

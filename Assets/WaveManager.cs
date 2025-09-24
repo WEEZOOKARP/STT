@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 [System.Serializable]
@@ -12,6 +14,9 @@ public class EnemyType
     public int damage;
     public float spawnWeight = 1f; // Higher weight = more likely to spawn
     public bool isBoss = false;
+    public string lootTableName;
+    public float lootDropChance;
+    public string bossLootTableName;
 }
 
 [System.Serializable]
@@ -36,73 +41,181 @@ public class WaveManager : MonoBehaviour
 {
     [Header("Enemy Types")]
     public List<EnemyType> availableEnemyTypes = new List<EnemyType>();
-    
+
+    [Header("Faction Data")]
+    public FactionEnemyPool activeFaction;
+    public int bossWaveInterval = 5;
+
     [Header("Wave Settings")]
     public List<WaveComposition> predefinedWaves = new List<WaveComposition>();
     public int maxWaves = 10;
     public float timeBetweenWaves = 5f;
-    
+    public int baseWaveBudget = 6;
+    public int budgetPerWave = 2;
+
     [Header("Spawn Settings")]
     public Transform[] spawnPoints;
     public float spawnRadius = 10f;
-    
-    [Header("Current Wave")]
+    public float spawnDelayMin = 0.5f;
+    public float spawnDelayMax = 2.5f;
+    public float perEnemySpawnDelayMin = 0.1f;
+    public float perEnemySpawnDelayMax = 0.35f;
+
+    [Header("Targets")]
+    [Tooltip("Stronghold or base the enemies march toward when not pursuing the player.")]
+    public Transform strongholdTarget;
+    [Tooltip("Optional detection anchor (e.g. invisible child object) attached to the player.")]
+    public Transform playerDetectionAnchor;
+
+    [Header("State")]
     public int currentWave = 1;
     public bool isWaveActive = false;
     public int enemiesRemaining = 0;
-    
-    private List<GameObject> activeEnemies = new List<GameObject>();
+
+    [Header("Debug")]
+    [SerializeField] private bool autoStartOnAwake = false;
+    [SerializeField] private bool logWaveCompositions = false;
+
+    private readonly List<GameObject> activeEnemies = new List<GameObject>();
+    private readonly Dictionary<string, FactionEnemyEntry> entryLookup = new Dictionary<string, FactionEnemyEntry>();
     private Coroutine currentWaveCoroutine;
+    private System.Random fallbackRandom = new System.Random();
+    private readonly HashSet<string> generatedWaveSignatures = new HashSet<string>();
+    private string lastWaveSignature;
+
+    private const int MaxWaveRerollAttempts = 5;
     
     // Events
     public System.Action<int> OnWaveStart;
     public System.Action<int> OnWaveComplete;
     public System.Action OnAllWavesComplete;
     
-    void Start()
+    void Awake()
     {
         InitializeEnemyTypes();
-        StartNextWave();
+    }
+
+    void Start()
+    {
+        if (autoStartOnAwake)
+        {
+            BeginRun(currentWave);
+        }
     }
     
     void InitializeEnemyTypes()
     {
-        // Create default enemy types if none are set
+        if (availableEnemyTypes == null)
+        {
+            availableEnemyTypes = new List<EnemyType>();
+        }
+
+        availableEnemyTypes.Clear();
+        entryLookup.Clear();
+
+        if (activeFaction != null && activeFaction.enemies != null)
+        {
+            foreach (var entry in activeFaction.enemies)
+            {
+                if (entry == null) continue;
+                RegisterEnemyEntry(entry);
+            }
+        }
+
         if (availableEnemyTypes.Count == 0)
         {
-            availableEnemyTypes.Add(new EnemyType { 
-                name = "Basic Enemy", 
-                health = 50, 
-                speed = 3f, 
-                damage = 10, 
-                spawnWeight = 1f 
+            RegisterEnemyEntry(new FactionEnemyEntry
+            {
+                displayName = "Basic Enemy",
+                health = 50,
+                speed = 3f,
+                damage = 10,
+                spawnWeight = 1f,
+                difficultyCost = 1
             });
-            
-            availableEnemyTypes.Add(new EnemyType { 
-                name = "Fast Enemy", 
-                health = 30, 
-                speed = 5f, 
-                damage = 5, 
-                spawnWeight = 0.7f 
+
+            RegisterEnemyEntry(new FactionEnemyEntry
+            {
+                displayName = "Fast Enemy",
+                health = 30,
+                speed = 5f,
+                damage = 5,
+                spawnWeight = 0.7f,
+                difficultyCost = 1
             });
-            
-            availableEnemyTypes.Add(new EnemyType { 
-                name = "Tank Enemy", 
-                health = 100, 
-                speed = 2f, 
-                damage = 15, 
-                spawnWeight = 0.5f 
+
+            RegisterEnemyEntry(new FactionEnemyEntry
+            {
+                displayName = "Tank Enemy",
+                health = 100,
+                speed = 2f,
+                damage = 15,
+                spawnWeight = 0.5f,
+                difficultyCost = 2
             });
-            
-            availableEnemyTypes.Add(new EnemyType { 
-                name = "Boss", 
-                health = 200, 
-                speed = 2.5f, 
-                damage = 25, 
-                spawnWeight = 0.1f, 
-                isBoss = true 
+
+            RegisterEnemyEntry(new FactionEnemyEntry
+            {
+                displayName = "Boss",
+                health = 200,
+                speed = 2.5f,
+                damage = 25,
+                spawnWeight = 0.1f,
+                isBoss = true,
+                difficultyCost = 10,
+                minWave = bossWaveInterval,
+                maxPerWave = 1
             });
         }
+    }
+
+    public void BeginRun(int startingWave = 1)
+    {
+        InitializeEnemyTypes();
+        ResetState();
+        currentWave = Mathf.Max(1, startingWave);
+        StartNextWave();
+    }
+
+    void RegisterEnemyEntry(FactionEnemyEntry entry)
+    {
+        if (entry == null) return;
+        EnemyType type = entry.ToEnemyType();
+        string key = ResolveEntryName(entry);
+
+        if (!entryLookup.ContainsKey(key))
+        {
+            entryLookup.Add(key, entry);
+        }
+        else
+        {
+            entryLookup[key] = entry;
+        }
+
+        availableEnemyTypes.Add(type);
+    }
+
+    void ResetState()
+    {
+        if (currentWaveCoroutine != null)
+        {
+            StopCoroutine(currentWaveCoroutine);
+            currentWaveCoroutine = null;
+        }
+
+        foreach (GameObject enemy in activeEnemies)
+        {
+            if (enemy != null)
+            {
+                Destroy(enemy);
+            }
+        }
+
+        activeEnemies.Clear();
+        enemiesRemaining = 0;
+        isWaveActive = false;
+        generatedWaveSignatures.Clear();
+        lastWaveSignature = null;
     }
     
     public void StartNextWave()
@@ -115,17 +228,19 @@ public class WaveManager : MonoBehaviour
         
         currentWaveCoroutine = StartCoroutine(RunWave(currentWave));
     }
-    
+
     IEnumerator RunWave(int waveNumber)
     {
         isWaveActive = true;
         OnWaveStart?.Invoke(waveNumber);
-        
+
+        System.Random waveRandom = GetWaveRandom(waveNumber);
+
         // Generate randomized wave composition
-        WaveComposition waveComp = GenerateRandomWave(waveNumber);
-        
+        WaveComposition waveComp = GenerateRandomWave(waveNumber, waveRandom);
+
         // Spawn enemies
-        yield return StartCoroutine(SpawnWaveEnemies(waveComp));
+        yield return StartCoroutine(SpawnWaveEnemies(waveComp, waveRandom));
         
         // Wait for all enemies to be defeated
         while (enemiesRemaining > 0)
@@ -149,144 +264,374 @@ public class WaveManager : MonoBehaviour
         currentWave++;
         StartNextWave();
     }
-    
-    WaveComposition GenerateRandomWave(int waveNumber)
+
+    WaveComposition GenerateRandomWave(int waveNumber, System.Random rng, int rerollDepth = 0)
     {
-        WaveComposition wave = new WaveComposition();
-        wave.waveNumber = waveNumber;
-        wave.enemies = new List<EnemySpawn>();
-        
-        // Determine if this is a boss wave (every 5th wave)
-        wave.isBossWave = (waveNumber % 5 == 0);
-        
-        if (wave.isBossWave)
+        WaveComposition wave = new WaveComposition
         {
-            // Boss wave - spawn 1 boss + some regular enemies
-            EnemyType bossType = GetRandomEnemyType(true);
-            wave.enemies.Add(new EnemySpawn { 
-                enemyTypeName = bossType.name, 
-                count = 1, 
-                spawnDelay = 0f 
-            });
-            
-            // Add some regular enemies
-            int regularEnemyCount = Random.Range(3, 8);
-            for (int i = 0; i < regularEnemyCount; i++)
+            waveNumber = waveNumber,
+            enemies = new List<EnemySpawn>()
+        };
+
+        List<FactionEnemyEntry> eligibleEntries = GatherEligibleEntries(waveNumber);
+        if (eligibleEntries.Count == 0)
+        {
+            Debug.LogWarning("WaveManager: No eligible enemies found for wave " + waveNumber);
+            return wave;
+        }
+
+        bool isBossWave = bossWaveInterval > 0 && waveNumber % bossWaveInterval == 0 && eligibleEntries.Any(e => e.isBoss);
+        wave.isBossWave = isBossWave;
+
+        Dictionary<FactionEnemyEntry, int> counts = new Dictionary<FactionEnemyEntry, int>();
+        int targetBudget = CalculateWaveBudget(waveNumber, rng, isBossWave);
+        int usedBudget = 0;
+
+        if (isBossWave)
+        {
+            var bossEntry = PickEnemyEntry(eligibleEntries, rng, counts, int.MaxValue, true);
+            if (bossEntry != null)
             {
-                EnemyType regularType = GetRandomEnemyType(false);
-                wave.enemies.Add(new EnemySpawn { 
-                    enemyTypeName = regularType.name, 
-                    count = 1, 
-                    spawnDelay = Random.Range(2f, 8f) 
-                });
+                RegisterSpawn(bossEntry, counts);
+                usedBudget += Mathf.Max(1, bossEntry.difficultyCost);
             }
+        }
+
+        int safety = 0;
+        while (usedBudget < targetBudget && safety < 500)
+        {
+            safety++;
+            int remainingBudget = Math.Max(1, targetBudget - usedBudget);
+            var entry = PickEnemyEntry(eligibleEntries, rng, counts, remainingBudget, false);
+            if (entry == null)
+            {
+                break;
+            }
+
+            int cost = Mathf.Max(1, entry.difficultyCost);
+            if (usedBudget + cost > targetBudget && counts.Count > 0)
+            {
+                break;
+            }
+
+            RegisterSpawn(entry, counts);
+            usedBudget += cost;
+        }
+
+        wave.enemies = BuildEnemySpawns(counts, rng);
+
+        if (logWaveCompositions)
+        {
+            LogWaveComposition(waveNumber, wave, targetBudget, usedBudget);
+        }
+
+        string signature = BuildWaveSignature(wave);
+        if (IsDuplicateSignature(signature) && rerollDepth < MaxWaveRerollAttempts)
+        {
+            if (logWaveCompositions)
+            {
+                Debug.Log($"WaveManager: Rerolling wave {waveNumber} (duplicate signature)");
+            }
+
+            return GenerateRandomWave(waveNumber, rng, rerollDepth + 1);
+        }
+
+        lastWaveSignature = signature;
+        generatedWaveSignatures.Add(signature);
+        return wave;
+    }
+
+    List<EnemySpawn> BuildEnemySpawns(Dictionary<FactionEnemyEntry, int> counts, System.Random rng)
+    {
+        List<EnemySpawn> spawns = new List<EnemySpawn>();
+
+        foreach (var pair in counts)
+        {
+            EnemyType type = GetEnemyTypeForEntry(pair.Key);
+            if (type == null) continue;
+
+            spawns.Add(new EnemySpawn
+            {
+                enemyTypeName = type.name,
+                count = pair.Value,
+                spawnDelay = Mathf.Lerp(spawnDelayMin, spawnDelayMax, (float)rng.NextDouble()),
+                spawnPosition = Vector3.zero
+            });
+        }
+
+        Shuffle(spawns, rng);
+        return spawns;
+    }
+
+    int CalculateWaveBudget(int waveNumber, System.Random rng, bool isBossWave)
+    {
+        int baseBudgetValue = Mathf.Max(1, baseWaveBudget + (waveNumber - 1) * budgetPerWave);
+        int variance = Mathf.Max(1, Mathf.RoundToInt(baseBudgetValue * 0.25f));
+        int minBudget = Mathf.Max(1, baseBudgetValue - variance);
+        int maxBudget = Mathf.Max(minBudget + 1, baseBudgetValue + variance);
+        int budget = minBudget + rng.Next(maxBudget - minBudget + 1);
+
+        if (isBossWave)
+        {
+            budget = Mathf.Max(budget, minBudget + budgetPerWave * 2);
+        }
+
+        return budget;
+    }
+
+    void RegisterSpawn(FactionEnemyEntry entry, Dictionary<FactionEnemyEntry, int> counts)
+    {
+        if (counts.TryGetValue(entry, out int current))
+        {
+            counts[entry] = current + 1;
         }
         else
         {
-            // Regular wave - spawn mix of enemies
-            int totalEnemies = Random.Range(5 + waveNumber, 10 + waveNumber * 2);
-            int enemyTypes = Mathf.Min(availableEnemyTypes.Count, Random.Range(2, 4));
-            
-            for (int i = 0; i < totalEnemies; i++)
+            counts[entry] = 1;
+        }
+    }
+
+    FactionEnemyEntry PickEnemyEntry(List<FactionEnemyEntry> entries, System.Random rng, Dictionary<FactionEnemyEntry, int> counts, int remainingBudget, bool bossOnly)
+    {
+        List<FactionEnemyEntry> candidates = new List<FactionEnemyEntry>();
+
+        foreach (var entry in entries)
+        {
+            if (entry == null) continue;
+            if (bossOnly && !entry.isBoss) continue;
+            if (!bossOnly && entry.isBoss) continue;
+
+            if (entry.maxPerWave > 0 && counts.TryGetValue(entry, out int currentCount) && currentCount >= entry.maxPerWave)
             {
-                EnemyType enemyType = GetRandomEnemyType(false);
-                wave.enemies.Add(new EnemySpawn { 
-                    enemyTypeName = enemyType.name, 
-                    count = 1, 
-                    spawnDelay = Random.Range(1f, 3f) 
-                });
+                continue;
+            }
+
+            int cost = Mathf.Max(1, entry.difficultyCost);
+            if (cost > remainingBudget && remainingBudget > 0)
+            {
+                continue;
+            }
+
+            candidates.Add(entry);
+        }
+
+        if (candidates.Count == 0)
+        {
+            return null;
+        }
+
+        float totalWeight = candidates.Sum(candidate => Mathf.Max(0.01f, candidate.spawnWeight));
+        double roll = rng.NextDouble() * totalWeight;
+
+        foreach (var candidate in candidates)
+        {
+            float weight = Mathf.Max(0.01f, candidate.spawnWeight);
+            roll -= weight;
+            if (roll <= 0)
+            {
+                return candidate;
             }
         }
-        
-        return wave;
+
+        return candidates[candidates.Count - 1];
     }
-    
-    EnemyType GetRandomEnemyType(bool bossOnly = false)
+
+    List<FactionEnemyEntry> GatherEligibleEntries(int waveNumber)
     {
-        List<EnemyType> validTypes = new List<EnemyType>();
-        
-        foreach (EnemyType type in availableEnemyTypes)
+        List<FactionEnemyEntry> entries = new List<FactionEnemyEntry>();
+
+        foreach (var pair in entryLookup)
         {
-            if (bossOnly && type.isBoss) validTypes.Add(type);
-            else if (!bossOnly && !type.isBoss) validTypes.Add(type);
-        }
-        
-        if (validTypes.Count == 0) return availableEnemyTypes[0];
-        
-        // Weighted random selection
-        float totalWeight = 0f;
-        foreach (EnemyType type in validTypes)
-        {
-            totalWeight += type.spawnWeight;
-        }
-        
-        float random = Random.Range(0f, totalWeight);
-        float currentWeight = 0f;
-        
-        foreach (EnemyType type in validTypes)
-        {
-            currentWeight += type.spawnWeight;
-            if (random <= currentWeight)
+            FactionEnemyEntry entry = pair.Value;
+            if (entry == null) continue;
+            if (entry.IsAvailableForWave(waveNumber))
             {
-                return type;
+                entries.Add(entry);
             }
         }
-        
-        return validTypes[0];
+
+        return entries;
     }
-    
-    IEnumerator SpawnWaveEnemies(WaveComposition wave)
+
+    IEnumerator SpawnWaveEnemies(WaveComposition wave, System.Random rng)
     {
-        enemiesRemaining = 0;
-        
+        enemiesRemaining = wave.enemies.Sum(e => e.count);
+
         foreach (EnemySpawn spawn in wave.enemies)
         {
-            yield return new WaitForSeconds(spawn.spawnDelay);
-            
+            float delay = Mathf.Clamp(spawn.spawnDelay, 0f, Mathf.Max(spawnDelayMax, spawnDelayMin));
+            if (delay > 0f)
+            {
+                yield return new WaitForSeconds(delay);
+            }
+
             for (int i = 0; i < spawn.count; i++)
             {
-                SpawnEnemy(spawn.enemyTypeName);
-                enemiesRemaining++;
-                yield return new WaitForSeconds(0.5f); // Small delay between spawns
+                SpawnEnemy(spawn.enemyTypeName, rng);
+                float perSpawnDelay = Mathf.Lerp(perEnemySpawnDelayMin, perEnemySpawnDelayMax, (float)rng.NextDouble());
+                if (perSpawnDelay > 0f)
+                {
+                    yield return new WaitForSeconds(perSpawnDelay);
+                }
             }
         }
     }
-    
-    void SpawnEnemy(string enemyTypeName)
+
+    void SpawnEnemy(string enemyTypeName, System.Random rng)
     {
         EnemyType enemyType = availableEnemyTypes.Find(e => e.name == enemyTypeName);
-        if (enemyType == null) return;
-        
-        // Get random spawn position
-        Vector3 spawnPos = GetRandomSpawnPosition();
-        
-        // Create enemy GameObject (placeholder - you'll need to create actual prefabs)
-        GameObject enemy = new GameObject(enemyType.name);
-        enemy.transform.position = spawnPos;
-        enemy.tag = "Enemy";
-        
-        // Add enemy behavior component
-        EnemyBehavior behavior = enemy.AddComponent<EnemyBehavior>();
-        behavior.Initialize(enemyType);
-        
-        activeEnemies.Add(enemy);
-        
-        // Subscribe to enemy death
-        behavior.OnDeath += OnEnemyDeath;
-    }
-    
-    Vector3 GetRandomSpawnPosition()
-    {
-        if (spawnPoints.Length > 0)
+        if (enemyType == null)
         {
-            Transform spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];
-            return spawnPoint.position + Random.insideUnitSphere * spawnRadius;
+            Debug.LogWarning("WaveManager: Enemy type not found for name " + enemyTypeName);
+            return;
         }
-        
-        // Fallback to random position around origin
-        return Random.insideUnitSphere * spawnRadius;
+
+        Vector3 spawnPos = GetRandomSpawnPosition(rng);
+        GameObject enemy;
+
+        if (enemyType.prefab != null)
+        {
+            enemy = Instantiate(enemyType.prefab, spawnPos, Quaternion.identity);
+        }
+        else
+        {
+            enemy = new GameObject(enemyType.name);
+            enemy.transform.position = spawnPos;
+        }
+
+        enemy.name = enemyType.name;
+        enemy.tag = "Enemy";
+
+        EnemyBehavior behavior = enemy.GetComponent<EnemyBehavior>();
+        if (behavior == null)
+        {
+            behavior = enemy.AddComponent<EnemyBehavior>();
+        }
+
+        behavior.Initialize(enemyType);
+        behavior.ConfigureTargets(strongholdTarget, ResolvePlayerAnchor());
+        behavior.OnDeath -= OnEnemyDeath;
+        behavior.OnDeath += OnEnemyDeath;
+
+        activeEnemies.Add(enemy);
     }
-    
+
+    Vector3 GetRandomSpawnPosition(System.Random rng)
+    {
+        if (spawnPoints != null && spawnPoints.Length > 0)
+        {
+            int index = rng.Next(spawnPoints.Length);
+            Transform spawnPoint = spawnPoints[index];
+            Vector3 offset = RandomPointInCircle(rng, spawnRadius);
+            offset.y = 0f;
+            return spawnPoint.position + offset;
+        }
+
+        return RandomPointInCircle(rng, spawnRadius);
+    }
+
+    Vector3 RandomPointInCircle(System.Random rng, float radius)
+    {
+        if (radius <= 0f)
+        {
+            return Vector3.zero;
+        }
+
+        double angle = rng.NextDouble() * Math.PI * 2.0;
+        double distance = Math.Sqrt(rng.NextDouble()) * radius;
+        return new Vector3((float)(Math.Cos(angle) * distance), 0f, (float)(Math.Sin(angle) * distance));
+    }
+
+    Transform ResolvePlayerAnchor()
+    {
+        if (playerDetectionAnchor != null)
+        {
+            return playerDetectionAnchor;
+        }
+
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+        return playerObj != null ? playerObj.transform : null;
+    }
+
+    EnemyType GetEnemyTypeForEntry(FactionEnemyEntry entry)
+    {
+        string key = ResolveEntryName(entry);
+        EnemyType enemyType = availableEnemyTypes.Find(e => e.name == key);
+
+        if (enemyType == null)
+        {
+            enemyType = entry.ToEnemyType();
+            availableEnemyTypes.Add(enemyType);
+        }
+
+        return enemyType;
+    }
+
+    string BuildWaveSignature(WaveComposition wave)
+    {
+        if (wave == null || wave.enemies == null || wave.enemies.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var parts = wave.enemies
+            .OrderBy(e => e.enemyTypeName)
+            .Select(e => $"{e.enemyTypeName}:{e.count}");
+
+        return string.Join("|", parts);
+    }
+
+    bool IsDuplicateSignature(string signature)
+    {
+        if (string.IsNullOrEmpty(signature))
+        {
+            return false;
+        }
+
+        if (signature == lastWaveSignature)
+        {
+            return true;
+        }
+
+        return generatedWaveSignatures.Contains(signature);
+    }
+
+    string ResolveEntryName(FactionEnemyEntry entry)
+    {
+        if (entry == null) return "Enemy";
+        if (!string.IsNullOrEmpty(entry.displayName)) return entry.displayName;
+        if (entry.prefab != null) return entry.prefab.name;
+        return "Enemy";
+    }
+
+    void Shuffle<T>(IList<T> list, System.Random rng)
+    {
+        for (int i = list.Count - 1; i > 0; i--)
+        {
+            int swapIndex = rng.Next(i + 1);
+            T temp = list[i];
+            list[i] = list[swapIndex];
+            list[swapIndex] = temp;
+        }
+    }
+
+    System.Random GetWaveRandom(int waveNumber)
+    {
+        if (RunState.Instance != null)
+        {
+            return RunState.Instance.CreateWaveRandom(waveNumber);
+        }
+
+        return new System.Random(fallbackRandom.Next());
+    }
+
+    void LogWaveComposition(int waveNumber, WaveComposition wave, int targetBudget, int usedBudget)
+    {
+        string composition = string.Join(", ", wave.enemies.Select(e => $"{e.enemyTypeName} x{e.count}"));
+        int seed = RunState.Instance != null ? RunState.Instance.RunSeed : 0;
+        Debug.Log($"Wave {waveNumber} (seed {seed}) targetBudget={targetBudget}, usedBudget={usedBudget}: {composition}");
+    }
+
     void OnEnemyDeath(GameObject enemy)
     {
         activeEnemies.Remove(enemy);
@@ -294,44 +639,60 @@ public class WaveManager : MonoBehaviour
         
         // Check if this was a boss
         EnemyBehavior behavior = enemy.GetComponent<EnemyBehavior>();
-        if (behavior != null && behavior.IsBoss)
+        if (behavior != null)
         {
-            // Trigger boss loot drop
-            DropBossLoot(enemy.transform.position);
+            if (behavior.IsBoss)
+            {
+                DropBossLoot(enemy.transform.position, behavior.BossLootTableName);
+            }
+            else
+            {
+                TryDropEnemyLoot(enemy.transform.position, behavior);
+            }
         }
     }
     
-    void DropBossLoot(Vector3 position)
+    void DropBossLoot(Vector3 position, string lootTableName)
     {
         // Use the loot system to drop boss loot
         if (LootSystem.Instance != null)
         {
-            LootSystem.Instance.DropBossLoot(position, "BasicBoss");
+            string table = string.IsNullOrEmpty(lootTableName) ? "BasicBoss" : lootTableName;
+            LootSystem.Instance.DropBossLoot(position, table);
         }
         else
         {
             Debug.LogWarning("LootSystem not found! Boss loot cannot be dropped.");
         }
     }
+
+    void TryDropEnemyLoot(Vector3 position, EnemyBehavior behavior)
+    {
+        if (LootSystem.Instance == null)
+        {
+            Debug.LogWarning("LootSystem not found! Regular enemy loot cannot be dropped.");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(behavior.LootTableName))
+        {
+            return;
+        }
+
+        float dropChance = behavior.LootDropChance;
+        if (dropChance <= 0f)
+        {
+            return;
+        }
+
+        if (UnityEngine.Random.value <= dropChance)
+        {
+            LootSystem.Instance.DropLoot(position, behavior.LootTableName);
+        }
+    }
     
     public void StopCurrentWave()
     {
-        if (currentWaveCoroutine != null)
-        {
-            StopCoroutine(currentWaveCoroutine);
-        }
-        
-        // Destroy all active enemies
-        foreach (GameObject enemy in activeEnemies)
-        {
-            if (enemy != null)
-            {
-                Destroy(enemy);
-            }
-        }
-        
-        activeEnemies.Clear();
-        enemiesRemaining = 0;
-        isWaveActive = false;
+        ResetState();
     }
 }

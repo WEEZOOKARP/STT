@@ -14,6 +14,7 @@ public class GameManager : MonoBehaviour
     public WaveManager waveManager;
     public MetaProgression metaProgression;
     public LootSystem lootSystem;
+    public RunState runState;
     
     [Header("UI References")]
     public GameObject gameOverPanel;
@@ -74,7 +75,14 @@ public class GameManager : MonoBehaviour
             GameObject lootSystemObj = new GameObject("LootSystem");
             lootSystem = lootSystemObj.AddComponent<LootSystem>();
         }
-        
+
+        runState = FindObjectOfType<RunState>();
+        if (runState == null)
+        {
+            GameObject runStateObj = new GameObject("RunState");
+            runState = runStateObj.AddComponent<RunState>();
+        }
+
         // Subscribe to events
         if (waveManager != null)
         {
@@ -93,7 +101,17 @@ public class GameManager : MonoBehaviour
         gameEnded = false;
         gameStartTime = Time.time;
         currentGameTime = 0f;
-        
+
+        if (runState != null)
+        {
+            runState.BeginNewRun();
+        }
+
+        if (waveManager != null)
+        {
+            waveManager.BeginRun(1);
+        }
+
         // Notify meta progression
         if (metaProgression != null)
         {
