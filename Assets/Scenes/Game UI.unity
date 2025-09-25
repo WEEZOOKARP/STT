@@ -3082,7 +3082,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.392}
+  m_Color: {r: 1, g: 1, b: 1, a: 0}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -3236,6 +3236,8 @@ MonoBehaviour:
   mouseSensitivity: 150
   playerCamera: {fileID: 2068765136}
   cameraParent: {fileID: 1701654102}
+  weapons: []
+  minSwipeDistance: 50
 --- !u!1 &1701654097
 GameObject:
   m_ObjectHideFlags: 0
@@ -25292,6 +25294,7 @@ MonoBehaviour:
   bulletSpawn: {fileID: 1593960456}
   bulletSpeed: 500
   bulletLifeTime: 2
+  damage: 5
   spreadAngle: 0
   pelletCount: 1
   cooldownTime: 0.05
@@ -51646,6 +51649,7 @@ MonoBehaviour:
   bulletSpawn: {fileID: 336915188}
   bulletSpeed: 1200
   bulletLifeTime: 0.3
+  damage: 10
   spreadAngle: 15
   pelletCount: 20
   cooldownTime: 2
@@ -67281,7 +67285,10 @@ MonoBehaviour:
   detectionRange: 10
   attackRange: 2
   attackCooldown: 1
-  animator: {fileID: 6333385572357606207}
+  strongholdTarget: {fileID: 0}
+  strongholdTag: Base
+  playerDetectionTarget: {fileID: 0}
+  repathInterval: 0.25
 --- !u!136 &6333385572357606209
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -107704,6 +107711,7 @@ MonoBehaviour:
   bulletSpawn: {fileID: 855478756932887761}
   bulletSpeed: 1500
   bulletLifeTime: 0.3
+  damage: 15
   spreadAngle: 0
   pelletCount: 1
   cooldownTime: 0.3

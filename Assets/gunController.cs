@@ -11,15 +11,32 @@ public class GunController : MonoBehaviour
     [Header("References")]
     public Camera playerCamera;         // Assign main camera
     public Transform cameraParent;      // Player root used for yaw
-    private Gun currentGun;             // Active gun (set by weapon switch)
+    public Gun[] weapons;               // Array of weapons to switch
+    private Gun currentGun;             // Active gun
+
+    [Header("Swipe Settings")]
+    public float minSwipeDistance = 50f; // Minimum pixels for a swipe
 
     private bool canShoot = true;
     private float xRotation = 0f; // vertical pitch
+
+    private int currentWeaponIndex = 0;
+
+    // Swipe detection
+    private Vector2 touchStartPos;
+    private Vector2 touchEndPos;
 
     void Start()
     {
         Input.gyro.enabled = true;
         if (testOnPC) Cursor.lockState = CursorLockMode.Locked;
+
+        // Assign first weapon if any
+        if (weapons.Length > 0)
+        {
+            SetCurrentGun(weapons[0]);
+        }
+
     }
 
     void Update()
@@ -52,15 +69,30 @@ public class GunController : MonoBehaviour
         }
         else
         {
-            if (Touchscreen.current != null &&
-                Touchscreen.current.primaryTouch.press.isPressed && canShoot)
+            if (Touchscreen.current == null) return;
+
+            var touch = Touchscreen.current.primaryTouch;
+
+            // Shooting
+            if (touch.press.isPressed && canShoot)
             {
                 TryShoot();
                 canShoot = false;
             }
-            if (Touchscreen.current != null &&
-                !Touchscreen.current.primaryTouch.press.isPressed)
+            if (!touch.press.isPressed)
                 canShoot = true;
+
+
+            // Swipe detection
+            if (touch.press.wasPressedThisFrame)
+            {
+                touchStartPos = touch.position.ReadValue();
+            }
+            if (touch.press.wasReleasedThisFrame)
+            {
+                touchEndPos = touch.position.ReadValue();
+                DetectSwipe();
+            }
         }
     }
 
@@ -91,16 +123,40 @@ public class GunController : MonoBehaviour
 
     private void TryShoot()
     {
-        if (currentGun != null)
-            currentGun.TryShoot(playerCamera.transform.forward);
+         currentGun?.TryShoot(playerCamera.transform.forward);
     }
 
     private void ReloadWeapon()
     {
-        if (currentGun != null)
-            currentGun.ReloadWeapon();
+        currentGun?.ReloadWeapon();
     }
 
+        private void DetectSwipe()
+    {
+        Vector2 swipe = touchEndPos - touchStartPos;
+
+        // Only horizontal swipes
+        if (Mathf.Abs(swipe.x) > Mathf.Abs(swipe.y) && swipe.magnitude >= minSwipeDistance)
+        {
+            if (swipe.x > 0)
+                SwitchWeapon(1);  // Swipe right -> next weapon
+            else
+                SwitchWeapon(-1); // Swipe left -> previous weapon
+        }
+    }
+
+    private void SwitchWeapon(int direction)
+    {
+        if (weapons.Length == 0) return;
+
+        currentWeaponIndex += direction;
+
+        // Wrap around
+        if (currentWeaponIndex >= weapons.Length) currentWeaponIndex = 0;
+        if (currentWeaponIndex < 0) currentWeaponIndex = weapons.Length - 1;
+
+        SetCurrentGun(weapons[currentWeaponIndex]);
+    }
 }
 
 
