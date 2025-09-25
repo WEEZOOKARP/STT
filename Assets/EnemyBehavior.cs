@@ -129,50 +129,11 @@ public class EnemyBehavior : MonoBehaviour
 
         currentHealth -= dmg;
         Debug.Log($"{name} get hit and take {dmg} damage! Current hp: {currentHealth}");
-        StartCoroutine(DamageFlash());
 
         if (currentHealth <= 0) Die();
     }
 
-IEnumerator DamageFlash()
-{
-    Renderer[] rs = GetComponentsInChildren<Renderer>();
-    Color[] originals = new Color[rs.Length];
-
-    for (int i = 0; i < rs.Length; i++)
-    {
-        Material mat = rs[i].material;
-
-        // Check which color property exists
-        if (mat.HasProperty("_Color"))
-        {
-            originals[i] = mat.color;
-            mat.color = Color.white;
-        }
-        else if (mat.HasProperty("_TintColor"))
-        {
-            originals[i] = mat.GetColor("_TintColor");
-            mat.SetColor("_TintColor", Color.white);
-        }
-        else
-        {
-            originals[i] = Color.white; // fallback
-        }
-    }
-
-    yield return new WaitForSeconds(0.1f);
-
-    // Restore original colors
-    for (int i = 0; i < rs.Length; i++)
-    {
-        Material mat = rs[i].material;
-
-        if (mat.HasProperty("_Color"))
-            mat.color = originals[i];
-        else if (mat.HasProperty("_TintColor"))
-            mat.SetColor("_TintColor", originals[i]);
-    }
-}
+     
 
 
     void Die()
