@@ -10,40 +10,53 @@ public class EnemyBehavior : MonoBehaviour
     public float moveSpeed = 3f;
     public int damage = 10;
     public bool isBoss = false;
-    
+
+    private float baseMoveSpeed;
+    private float speedMultiplier = 1f;
+    private float damageTakenMultiplier = 1f;
+
     [Header("AI Settings")]
-    public float detectionRange = 10f;
-    public float attackRange = 2f;
-    public float attackCooldown = 1f;
+    [Tooltip("How often we can recompute a path (sec).")]
+    [SerializeField] private float repathInterval = 0.25f;
+    [Tooltip("Distance to the player to START chasing.")]
+    [SerializeField] private float chaseRange = 10f;
+    [Tooltip("Distance to the player to STOP chasing (slightly larger than chaseRange to avoid flip-flop).")]
+    [SerializeField] private float disengageRange = 13f;
+    [Tooltip("Within this distance of the stronghold, count as a hit even if we stop a few cm short.")]
+    [SerializeField] private float baseContactDistance = 0.75f;
+    [Tooltip("NavMesh sample radius used for SetDestination safety.")]
+    [SerializeField] private float navSampleRadius = 1.0f;
 
     [Header("Navigation Targets")]
-    [Tooltip("Where the enemy marches when the player is not nearby.")]
+    [Tooltip("Where the enemy marches when not pursuing the player.")]
     [SerializeField] private Transform strongholdTarget;
     [Tooltip("Scene tag used to auto-find the stronghold when no reference is assigned.")]
     [SerializeField] private string strongholdTag = "Base";
-    [Tooltip("Optional anchor (e.g. invisible child) that represents the player's detection point.")]
+    [Tooltip("Optional anchor (e.g. invisible child) representing the player's detection point.")]
     [SerializeField] private Transform playerDetectionTarget;
-    [Tooltip("Minimum seconds between path recalculations to reduce jitter.")]
-    [SerializeField] private float repathInterval = 0.25f;
-    
+
     private int currentHealth;
     private Transform player;
     private NavMeshAgent agent;
     private float lastAttackTime;
     private float lastDestinationUpdateTime;
     private bool isDead = false;
+
     private string lootTableName;
     private float lootDropChance = 0f;
     private string bossLootTableName;
 
-    // Events
     public System.Action<GameObject> OnDeath;
 
     public bool IsBoss => isBoss;
     public string LootTableName => lootTableName;
     public string BossLootTableName => string.IsNullOrEmpty(bossLootTableName) ? lootTableName : bossLootTableName;
     public float LootDropChance => Mathf.Clamp01(lootDropChance);
-    
+
+    enum TargetMode { Stronghold, ChasePlayer }
+    private TargetMode mode = TargetMode.Stronghold;
+
+    // ----------------- Initialization -----------------
     public void Initialize(EnemyType enemyType)
     {
         maxHealth = enemyType.health;
@@ -58,234 +71,238 @@ public class EnemyBehavior : MonoBehaviour
 
         TryCachePlayer();
         AutoAssignStronghold();
-        
-        // Setup NavMeshAgent
+
         agent = GetComponent<NavMeshAgent>();
-        if (agent == null)
-        {
-            agent = gameObject.AddComponent<NavMeshAgent>();
-        }
-        
+        if (!agent) agent = gameObject.AddComponent<NavMeshAgent>();
         agent.speed = moveSpeed;
-        agent.stoppingDistance = attackRange;
-        
-        // Add visual representation
+        agent.stoppingDistance = 0.15f; // lets them tuck in close
+        agent.autoBraking = true;
+
+        // Make sure we start on the NavMesh if spawned slightly off
+        NavMeshHit hit;
+        if (NavMesh.SamplePosition(transform.position, out hit, 1.0f, NavMesh.AllAreas))
+        {
+            agent.Warp(hit.position);
+        }
+
         AddVisualRepresentation();
     }
-    
+
     void AddVisualRepresentation()
     {
-        // Create a simple visual representation
         GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
         visual.transform.SetParent(transform);
         visual.transform.localPosition = Vector3.zero;
         visual.transform.localScale = isBoss ? Vector3.one * 2f : Vector3.one;
-        
-        // Set color based on enemy type
-        Renderer renderer = visual.GetComponent<Renderer>();
-        if (renderer != null)
-        {
-            if (isBoss)
-            {
-                renderer.material.color = Color.red;
-            }
-            else
-            {
-                renderer.material.color = Color.blue;
-            }
-        }
-        
-        // Remove collider from visual (we'll use the main object's collider)
+        var renderer = visual.GetComponent<Renderer>();
+        if (renderer) renderer.material.color = isBoss ? Color.red : Color.blue;
         Destroy(visual.GetComponent<Collider>());
+        animator = GetComponentInChildren<Animator>() ?? GetComponent<Animator>();
+        if (!animator) animator = gameObject.AddComponent<Animator>(); // safe default (won't play clips unless assigned)
     }
-    
+
+    // ----------------- Frame Update -----------------
     void Update()
     {
-        if (isDead)
-        {
-            return;
-        }
+        if (isDead) return;
 
-        if (player == null)
-        {
-            TryCachePlayer();
-        }
-
+        if (!player) TryCachePlayer();
         Transform detectionTarget = GetDetectionTarget();
-        float distanceToPlayer = detectionTarget != null
-            ? Vector3.Distance(transform.position, detectionTarget.position)
-            : float.MaxValue;
+        float distToPlayer = detectionTarget ? Vector3.Distance(transform.position, detectionTarget.position) : float.MaxValue;
+        float distToBase = strongholdTarget ? Vector3.Distance(transform.position, strongholdTarget.position) : float.MaxValue;
 
-        Transform destination = strongholdTarget;
-        if (detectionTarget != null && distanceToPlayer <= detectionRange)
+        // Decide mode with hysteresis to avoid jitter
+        switch (mode)
         {
-            destination = detectionTarget;
+            case TargetMode.Stronghold:
+                if (detectionTarget && distToPlayer <= chaseRange)
+                    mode = TargetMode.ChasePlayer;
+                break;
+            case TargetMode.ChasePlayer:
+                if (!detectionTarget || distToPlayer >= disengageRange)
+                    mode = TargetMode.Stronghold;
+                break;
         }
 
-        if (agent != null && destination != null && Time.time >= lastDestinationUpdateTime + repathInterval)
+        // Choose destination
+        Transform desired = (mode == TargetMode.ChasePlayer) ? detectionTarget : strongholdTarget;
+
+        if (AgentReady() && desired && Time.time >= lastDestinationUpdateTime + repathInterval)
         {
-            agent.SetDestination(destination.position);
+            // Sample on NavMesh for safe SetDestination
+            Vector3 dest = desired.position;
+            NavMeshHit hit;
+            if (NavMesh.SamplePosition(dest, out hit, navSampleRadius, NavMesh.AllAreas))
+                SetSafeDestination(hit.position);
+            else
+                SetSafeDestination(dest); // fallback
             lastDestinationUpdateTime = Time.time;
         }
 
-        if (player != null && distanceToPlayer <= attackRange && Time.time >= lastAttackTime + attackCooldown)
+        // Base contact fallback (scores a hit even if the agent stops a hair short)
+        if (strongholdTarget && distToBase <= baseContactDistance)
+        {
+            DamageStronghold(1); // your forwarder to the stronghold’s TakeDamage
+            Die();               // kamikaze behaviour when they reach the base
+            return;
+        }
+
+        // Player contact / melee
+        if (player && distToPlayer <= 1.75f && Time.time >= lastAttackTime + 1.0f)
         {
             AttackPlayer();
         }
     }
-    
+
+    // ----------------- Actions -----------------
     void AttackPlayer()
     {
         lastAttackTime = Time.time;
-        
-        // Deal damage to player
-        Status playerStatus = player.GetComponent<Status>();
-        if (playerStatus != null)
-        {
-            playerStatus.TakeDamage(damage);
-        }
-        
-        Debug.Log($"{gameObject.name} attacked player for {damage} damage!");
+        Status playerStatus = player ? player.GetComponent<Status>() : null;
+        if (playerStatus) playerStatus.TakeDamage(damage);
+        // Optional animation trigger
+        if (animator) animator.SetTrigger("ATTACK");
+        // Debug.Log($"{name} attacked player for {damage}!");
     }
 
-    public void TakeDamage(int damage)
+    public void TakeDamage(int amount)
     {
         if (isDead) return;
-        
-        currentHealth -= damage;
-        
-        // Visual feedback
+
+       
+        int finalDamage = Mathf.RoundToInt(amount * damageTakenMultiplier);
+
+        currentHealth -= finalDamage;
         StartCoroutine(DamageFlash());
-        
+
         if (currentHealth <= 0)
-        {
             Die();
-        }
     }
-    
+
+
     System.Collections.IEnumerator DamageFlash()
     {
-        Renderer[] renderers = GetComponentsInChildren<Renderer>();
-        Color[] originalColors = new Color[renderers.Length];
-        
-        // Store original colors
+        var renderers = GetComponentsInChildren<Renderer>();
+        var originals = new Color[renderers.Length];
         for (int i = 0; i < renderers.Length; i++)
         {
-            originalColors[i] = renderers[i].material.color;
+            originals[i] = renderers[i].material.color;
             renderers[i].material.color = Color.white;
         }
-        
         yield return new WaitForSeconds(0.1f);
-        
-        // Restore original colors
         for (int i = 0; i < renderers.Length; i++)
-        {
-            renderers[i].material.color = originalColors[i];
-        }
+            renderers[i].material.color = originals[i];
     }
 
     void Die()
-{
-    isDead = true;
-    animator.SetTrigger("DEATH");
-
-    // Stop movement & collisions
-    if (agent) agent.enabled = false;
-    Collider col = GetComponent<Collider>();
-    if (col) col.enabled = false;
-
-    // Reward player
-    Leveling playerLeveling = player?.GetComponent<Leveling>();
-    if (playerLeveling != null)
     {
-        float expReward = isBoss ? 100f : 20f;
-        playerLeveling.AddExperience(expReward);
+        isDead = true;
+        if (animator) animator.SetTrigger("DEATH");
+        if (agent) agent.enabled = false;
+        var col = GetComponent<Collider>(); if (col) col.enabled = false;
+
+        // Reward player
+        var lvl = player ? player.GetComponent<Leveling>() : null;
+        if (lvl) lvl.AddExperience(isBoss ? 100f : 20f);
+
+        if (MetaProgression.Instance != null)
+            MetaProgression.Instance.KillEnemy(gameObject.name, isBoss);
+
+        OnDeath?.Invoke(gameObject);
+
+        float deathTime = (animator != null)
+            ? animator.GetCurrentAnimatorStateInfo(0).length
+            : 0.25f;
+        Destroy(gameObject, deathTime + 0.2f);
     }
 
-    if (MetaProgression.Instance != null)
+    // ----------------- Helpers -----------------
+    void SetSafeDestination(Vector3 worldPos)
     {
-        MetaProgression.Instance.KillEnemy(gameObject.name, isBoss);
+        if (!AgentReady()) return;
+        // Only reset if significantly different to reduce path spam
+        if (agent.destination == Vector3.zero || (agent.destination - worldPos).sqrMagnitude > 0.01f)
+            agent.SetDestination(worldPos);
     }
 
-    OnDeath?.Invoke(gameObject);
-
-    // ✅ Wait for animation length
-    float deathTime = animator.GetCurrentAnimatorStateInfo(0).length;
-    Destroy(gameObject, deathTime + 0.2f);
-}
-
-    
-    void OnCollisionEnter(Collision collision)
+    bool AgentReady()
     {
-        // Handle collision with player
-        if (collision.gameObject.CompareTag("Player"))
-        {
-            AttackPlayer();
-        }
-    }
-
-    void OnDrawGizmosSelected()
-    {
-        // Draw detection range
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, detectionRange);
-        
-        // Draw attack range
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, attackRange);
+        return agent != null && agent.enabled && agent.isOnNavMesh;
     }
 
     public void ConfigureTargets(Transform stronghold, Transform detectionAnchor)
     {
-        strongholdTarget = stronghold != null ? stronghold : strongholdTarget;
-        if (detectionAnchor != null)
-        {
-            playerDetectionTarget = detectionAnchor;
-        }
+        strongholdTarget = stronghold ? stronghold : strongholdTarget;
+        if (detectionAnchor) playerDetectionTarget = detectionAnchor;
     }
 
     void TryCachePlayer()
     {
-        if (player != null) return;
-
+        if (player) return;
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-        if (playerObj != null)
-        {
-            player = playerObj.transform;
-        }
-
-        if (playerDetectionTarget == null && player != null)
-        {
-            playerDetectionTarget = player;
-        }
+        if (playerObj) player = playerObj.transform;
+        if (!playerDetectionTarget && player) playerDetectionTarget = player;
     }
 
     void AutoAssignStronghold()
     {
-        if (strongholdTarget != null || string.IsNullOrEmpty(strongholdTag))
-        {
-            return;
-        }
-
+        if (strongholdTarget || string.IsNullOrEmpty(strongholdTag)) return;
         GameObject strongholdObj = GameObject.FindGameObjectWithTag(strongholdTag);
-        if (strongholdObj != null)
-        {
-            strongholdTarget = strongholdObj.transform;
-        }
+        if (strongholdObj) strongholdTarget = strongholdObj.transform;
     }
 
     Transform GetDetectionTarget()
     {
-        if (playerDetectionTarget != null)
-        {
-            return playerDetectionTarget;
-        }
-
-        if (player != null)
-        {
-            return player;
-        }
-
+        if (playerDetectionTarget) return playerDetectionTarget;
+        if (player) return player;
         return null;
+    }
+
+    // -------- Stronghold damage passthrough (keeps your single source of truth) --------
+    public void DamageStronghold(int amount)
+    {
+        // This assumes you already have the forwarder that calls stronghold.TakeDamage(...)
+        // If your Base has StrongholdHealth on the same transform, you can do:
+        if (!strongholdTarget) return;
+        var sh = strongholdTarget.GetComponent<StrongholdHealth>();
+        if (sh) sh.TakeDamage(amount);
+    }
+
+    // ----------------- Gizmos -----------------
+    void OnDrawGizmosSelected()
+    {
+        Gizmos.color = new Color(1f, 0.9f, 0f, 0.75f);
+        Gizmos.DrawWireSphere(transform.position, chaseRange);
+        Gizmos.color = new Color(1f, 0.5f, 0f, 0.5f);
+        Gizmos.DrawWireSphere(transform.position, disengageRange);
+        Gizmos.color = new Color(1f, 0f, 0f, 0.35f);
+        if (strongholdTarget) Gizmos.DrawWireSphere(strongholdTarget.position, baseContactDistance);
+    }
+
+    // Keep simple collision hook if you want contact damage too
+    void OnCollisionEnter(Collision c)
+    {
+        if (c.gameObject.CompareTag("Player")) AttackPlayer();
+    }
+    public void ApplySpeedMultiplier(float mult)
+    {
+        speedMultiplier *= mult;
+        if (agent != null) agent.speed = baseMoveSpeed * speedMultiplier;
+    }
+
+    public void ResetSpeedMultiplier()
+    {
+        speedMultiplier = 1f;
+        if (agent != null) agent.speed = baseMoveSpeed;
+    }
+
+    public void ApplyDamageMultiplier(float mult)
+    {
+        damageTakenMultiplier *= mult;
+    }
+
+    public void ResetDamageMultiplier()
+    {
+        damageTakenMultiplier = 1f;
     }
 }

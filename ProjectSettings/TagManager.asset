@@ -4,6 +4,8 @@
 TagManager:
   serializedVersion: 3
   tags:
+  - Base
+  - Enemy
   layers:
   - Default
   - TransparentFX
@@ -17,9 +19,9 @@ TagManager:
   - SimEnv
   - 
   - ARPlane
-  - 
-  - 
-  - 
+  - Enemy
+  - Base
+  - Player
   - 
   - 
   - 

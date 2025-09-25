@@ -1,6 +1,7 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+
 using System.Linq;
 using UnityEngine;
 
@@ -17,6 +18,11 @@ public class EnemyType
     public string lootTableName;
     public float lootDropChance;
     public string bossLootTableName;
+
+    // (These two fields seem unrelated to EnemyType, but keeping them here
+    //  since they existed in your version. Remove if not needed.)
+    public int strongholdMaxHealth = 300;
+    public int strongholdCurrentHealth;
 }
 
 [System.Serializable]
@@ -39,6 +45,14 @@ public class EnemySpawn
 
 public class WaveManager : MonoBehaviour
 {
+    [Header("Build Phases")]
+    public bool useBuildPhases = true;
+    [HideInInspector] public bool waitingForBuild = false;
+
+    [SerializeField] private StrongholdHealth stronghold;
+    public int strongholdCurrentHealth => stronghold ? stronghold.CurrentHealth : 0;
+    public int strongholdMaxHealth => stronghold ? stronghold.MaxHealth : 0;
+
     [Header("Enemy Types")]
     public List<EnemyType> availableEnemyTypes = new List<EnemyType>();
 
@@ -71,6 +85,7 @@ public class WaveManager : MonoBehaviour
     public int currentWave = 1;
     public bool isWaveActive = false;
     public int enemiesRemaining = 0;
+    public bool buildPhaseActive = false; // NEW
 
     [Header("Debug")]
     [SerializeField] private bool autoStartOnAwake = false;
@@ -84,12 +99,13 @@ public class WaveManager : MonoBehaviour
     private string lastWaveSignature;
 
     private const int MaxWaveRerollAttempts = 5;
-    
+
     // Events
     public System.Action<int> OnWaveStart;
     public System.Action<int> OnWaveComplete;
     public System.Action OnAllWavesComplete;
-    
+    public System.Action<int> OnBuildPhaseStarted; // NEW
+
     void Awake()
     {
         InitializeEnemyTypes();
@@ -102,7 +118,7 @@ public class WaveManager : MonoBehaviour
             BeginRun(currentWave);
         }
     }
-    
+
     void InitializeEnemyTypes()
     {
         if (availableEnemyTypes == null)
@@ -183,6 +199,8 @@ public class WaveManager : MonoBehaviour
         InitializeEnemyTypes();
         ResetState();
         currentWave = Mathf.Max(1, startingWave);
+        if (stronghold) stronghold.ResetHealth();
+
         StartNextWave();
     }
 
@@ -223,10 +241,11 @@ public class WaveManager : MonoBehaviour
         activeEnemies.Clear();
         enemiesRemaining = 0;
         isWaveActive = false;
+        buildPhaseActive = false; // NEW
         generatedWaveSignatures.Clear();
         lastWaveSignature = null;
     }
-    
+
     public void StartNextWave()
     {
         if (currentWave > maxWaves)
@@ -234,7 +253,8 @@ public class WaveManager : MonoBehaviour
             OnAllWavesComplete?.Invoke();
             return;
         }
-        
+
+        buildPhaseActive = false; // ensure off
         currentWaveCoroutine = StartCoroutine(RunWave(currentWave));
     }
 
@@ -250,29 +270,92 @@ public class WaveManager : MonoBehaviour
 
         // Spawn enemies
         yield return StartCoroutine(SpawnWaveEnemies(waveComp, waveRandom));
+
         
-        // Wait for all enemies to be defeated
-        while (enemiesRemaining > 0)
+        while (true)
         {
+            PruneDeadEnemies(); // keep the list clean
+
+            // exit when counter says zero OR when there are simply no tracked enemies left
+            if (enemiesRemaining <= 0 || activeEnemies.Count == 0)
+                break;
+
             yield return null;
         }
-        
+
+
         // Wave complete
         isWaveActive = false;
         OnWaveComplete?.Invoke(waveNumber);
-        
+
         // Track wave completion in meta progression
         if (MetaProgression.Instance != null)
         {
             MetaProgression.Instance.CompleteWave(waveNumber);
         }
-        
-        // Wait before next wave
-        yield return new WaitForSeconds(timeBetweenWaves);
-        
+
+        // === ENTER BUILD PHASE INSTEAD OF AUTO-STARTING NEXT WAVE ===
+        StartBuildPhase();
+        yield break;
+    }
+
+    
+    void PruneDeadEnemies()
+    {
+        for (int i = activeEnemies.Count - 1; i >= 0; i--)
+        {
+            if (activeEnemies[i] == null)
+            {
+                activeEnemies.RemoveAt(i);
+                // if something killed an enemy without calling OnDeath, make sure we don't get stuck
+                if (enemiesRemaining > 0) enemiesRemaining--;
+            }
+        }
+    }
+
+
+    // ---------- BUILD PHASE CONTROL (NEW) ----------
+    public void StartBuildPhase()
+    {
+        buildPhaseActive = true;
+        isWaveActive = false;
+
+        // fire the event (keeps things decoupled if you use it)
+        OnBuildPhaseStarted?.Invoke(currentWave);
+
+        // ✅ hard-call the controller so the panel always shows
+        var bpc = FindObjectOfType<BuildPhaseController>();
+        if (bpc != null)
+        {
+            bpc.ShowBuildPanel();
+        }
+
+        Debug.Log($"[WaveManager] Build Phase started after wave {currentWave}.");
+    }
+
+    /// <summary>
+    /// Call this from your UI "Finish" button to end the build phase and start the next wave.
+    /// </summary>
+    public void FinishBuildPhase()
+    {
+        if (!buildPhaseActive) return;
+        buildPhaseActive = false;
+
+        if (timeBetweenWaves > 0f) StartCoroutine(StartNextWaveAfterDelay(timeBetweenWaves));
+        else
+        {
+            currentWave++;
+            StartNextWave();
+        }
+    }
+
+    private IEnumerator StartNextWaveAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
         currentWave++;
         StartNextWave();
     }
+    // ------------------------------------------------
 
     WaveComposition GenerateRandomWave(int waveNumber, System.Random rng, int rerollDepth = 0)
     {
@@ -645,7 +728,7 @@ public class WaveManager : MonoBehaviour
     {
         activeEnemies.Remove(enemy);
         enemiesRemaining--;
-        
+
         // Check if this was a boss
         EnemyBehavior behavior = enemy.GetComponent<EnemyBehavior>();
         if (behavior != null)
@@ -660,7 +743,7 @@ public class WaveManager : MonoBehaviour
             }
         }
     }
-    
+
     void DropBossLoot(Vector3 position, string lootTableName)
     {
         // Use the loot system to drop boss loot
@@ -699,9 +782,29 @@ public class WaveManager : MonoBehaviour
             LootSystem.Instance.DropLoot(position, behavior.LootTableName);
         }
     }
-    
+
     public void StopCurrentWave()
     {
         ResetState();
+    }
+
+    public void DamageStronghold(int amount)
+    {
+        if (amount <= 0) return;
+
+        if (!stronghold)
+        {
+            Debug.LogWarning("DamageStronghold called but no StrongholdHealth is assigned.");
+            return;
+        }
+
+        stronghold.TakeDamage(amount);
+
+        if (stronghold.CurrentHealth <= 0)
+        {
+            // stop waves and end the game
+            StopCurrentWave();
+            if (GameManager.Instance) GameManager.Instance.GameOver();
+        }
     }
 }
