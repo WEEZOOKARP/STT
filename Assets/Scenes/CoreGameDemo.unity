@@ -1210,6 +1210,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3878820174236590508, guid: 5b6728fac6d1e1945a32d9c46415f1f7, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3916228356575153470, guid: 5b6728fac6d1e1945a32d9c46415f1f7, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
@@ -1237,6 +1241,14 @@ PrefabInstance:
     - target: {fileID: 6307244958533855440, guid: 5b6728fac6d1e1945a32d9c46415f1f7, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7225790721415819036, guid: 5b6728fac6d1e1945a32d9c46415f1f7, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -0.020019531
+      objectReference: {fileID: 0}
+    - target: {fileID: 7225790721415819036, guid: 5b6728fac6d1e1945a32d9c46415f1f7, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -28.100952
       objectReference: {fileID: 0}
     - target: {fileID: 8769490129031279545, guid: 5b6728fac6d1e1945a32d9c46415f1f7, type: 3}
       propertyPath: m_Name
@@ -2134,6 +2146,8 @@ GameObject:
   m_Component:
   - component: {fileID: 968063385}
   - component: {fileID: 968063384}
+  - component: {fileID: 968063387}
+  - component: {fileID: 968063386}
   m_Layer: 0
   m_Name: Player Storage
   m_TagString: Untagged
@@ -2156,17 +2170,11 @@ MonoBehaviour:
   experience: 0
   level: 1
   incrimentPerLevel: 50
-  SkillPoints: 0
-  playerStats:
-    healthMult: 1
-    damageMult: 1
-    reloadMult: 1
-    projectileLifestealMult: 0
   experienceBar: {fileID: 466611283}
-  levelUpButton: {fileID: 466611282}
   levelText: {fileID: 859621065}
   SkillPointsText: {fileID: 466611281}
-  skills: []
+  levelUpButton: {fileID: 466611282}
+  SkillPoints: 0
 --- !u!4 &968063385
 Transform:
   m_ObjectHideFlags: 0
@@ -2182,6 +2190,41 @@ Transform:
   m_Children: []
   m_Father: {fileID: 395044059}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &968063386
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 968063383}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec2b61803285e7a44993d171d841d35b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHealth: 100
+  healthBar: {fileID: 1157990629}
+  player: {fileID: 968063383}
+  isdead: 0
+--- !u!114 &968063387
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 968063383}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 645d47a44036a114abd6f6335775180b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  statTextIntro: {fileID: 618531585}
+  enableScroll: 1
+  scrollSpeed: 50
+  hpBar: {fileID: 1157990629}
+  defenceIcon: {fileID: 1105781643}
+  regenIcon: {fileID: 339180867}
+  powerIcon: {fileID: 1758996886}
 --- !u!1 &1055802516
 GameObject:
   m_ObjectHideFlags: 0
