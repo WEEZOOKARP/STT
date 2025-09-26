@@ -34,6 +34,10 @@ public class EnemySpawn
 
 public class WaveManager : MonoBehaviour
 {
+
+    // Event for tutorial condition subscribed to wave completion event - Archie | [25/09/25].
+    public static event System.Action<int> OnWaveCompleted;
+
     [Header("Enemy Types")]
     public List<EnemyType> availableEnemyTypes = new List<EnemyType>();
     
@@ -135,7 +139,7 @@ public class WaveManager : MonoBehaviour
         
         // Wave complete
         isWaveActive = false;
-        OnWaveComplete?.Invoke(waveNumber);
+        OnWaveCompleted?.Invoke(waveNumber);
         
         // Track wave completion in meta progression
         if (MetaProgression.Instance != null)
