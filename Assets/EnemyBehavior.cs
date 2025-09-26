@@ -159,19 +159,25 @@ public class EnemyBehavior : MonoBehaviour
         if (playerStatus) playerStatus.TakeDamage(damage);
     }
 
-    public void TakeDamage(int amount)
+public void TakeDamage(int amount)
+{
+    if (isDead) return;
+    var lvl = player ? player.GetComponent<Leveling>() : null;
+
+    float playerDamageMultiplier = 1f;
+    if (lvl != null && lvl.playerStats != null)
     {
-        if (isDead) return;
-        var lvl = player ? player.GetComponent<Leveling>() : null;
-       
-        int finalDamage = Mathf.RoundToInt(amount * damageTakenMultiplier * lvl.playerStats.GetPlayerMultipliers().Damage);
-
-        currentHealth -= finalDamage;
-        StartCoroutine(DamageFlash());
-
-        if (currentHealth <= 0)
-            Die(); // if you say so - William
+        playerDamageMultiplier = lvl.playerStats.GetPlayerMultipliers().Damage;
     }
+
+    int finalDamage = Mathf.RoundToInt(amount * damageTakenMultiplier * playerDamageMultiplier);
+
+    currentHealth -= finalDamage;
+    StartCoroutine(DamageFlash());
+
+    if (currentHealth <= 0)
+        Die();
+}
 
 
     System.Collections.IEnumerator DamageFlash()
