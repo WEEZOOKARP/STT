@@ -2,17 +2,12 @@ using UnityEngine;
 
 public class Bullet : MonoBehaviour
 {
-    public GameObject bulletImpactPrefab, bloodMistPrefab;
+    public GameObject bloodMistPrefab;
     public int damage=10;
 
     void OnCollisionEnter(Collision c)
     {
-        if (c.gameObject.CompareTag("shootableObject") || c.gameObject.CompareTag("Wall"))
-        {
-            Debug.Log($"Hit {c.gameObject.name}!");
-            CreateEffect(c, bulletImpactPrefab);
-        }
-        else if (c.gameObject.CompareTag("Enemy"))
+        if (c.gameObject.CompareTag("Enemy"))
         {
             Debug.Log($"Hit {c.gameObject.name}!");
             CreateEffect(c, bloodMistPrefab);
@@ -34,8 +29,6 @@ public class Bullet : MonoBehaviour
             contact.point + contact.normal * 0.01f,
             Quaternion.LookRotation(contact.normal));
 
-        if (!c.gameObject.CompareTag("Wall"))
-            fx.transform.SetParent(c.transform);
     }
 }
 
