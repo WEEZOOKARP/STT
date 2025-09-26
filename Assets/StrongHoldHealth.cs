@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.Events;
 
 [DisallowMultipleComponent]
+[RequireComponent(typeof(Collider))]
 public class StrongholdHealth : MonoBehaviour
 {
     [Header("Health")]
@@ -11,6 +12,7 @@ public class StrongholdHealth : MonoBehaviour
     public int CurrentHealth => currentHealth;
     public int MaxHealth => maxHealth;
 
+    [Header("Events")]
     public UnityEvent<int, int> OnHealthChanged;
     public UnityEvent OnDestroyed;
 
@@ -18,8 +20,24 @@ public class StrongholdHealth : MonoBehaviour
     [Tooltip("Used if EnemyBehavior doesn't expose a damage field.")]
     public int fallbackEnemyDamage = 10;
 
+    [Header("Zero-HP Behaviour")]
+    [Tooltip("Destroy this stronghold object when health reaches zero.")]
+    public bool destroyOnZeroHealth = true;
+    [Tooltip("Optionally notify GameManager.GameOver() on destruction.")]
+    public bool triggerGameOver = true;
+    [Tooltip("Delay before destroying, to allow VFX/SFX.")]
+    public float destroyDelay = 0.15f;
+
+    void Reset()
+    {
+        // Make sure our collider is a trigger
+        var col = GetComponent<Collider>();
+        col.isTrigger = true;
+    }
+
     void Awake()
     {
+        // Start healthy and broadcast initial value
         currentHealth = Mathf.Max(1, maxHealth);
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
     }
@@ -35,6 +53,16 @@ public class StrongholdHealth : MonoBehaviour
         {
             Debug.Log("[Stronghold] Destroyed!");
             OnDestroyed?.Invoke();
+
+            if (triggerGameOver && GameManager.Instance != null)
+            {
+                GameManager.Instance.GameOver(); // optional, remove if not desired
+            }
+
+            if (destroyOnZeroHealth)
+            {
+                Destroy(gameObject, destroyDelay);
+            }
         }
     }
 
@@ -44,6 +72,7 @@ public class StrongholdHealth : MonoBehaviour
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
     }
 
+    // Enemy hits the stronghold -> base takes damage, enemy dies.
     void OnTriggerEnter(Collider other)
     {
         if (!other.CompareTag("Enemy")) return;
