@@ -294,9 +294,9 @@ public class WaveManager : MonoBehaviour
             MetaProgression.Instance.CompleteWave(waveNumber);
         }
 
-        // === ENTER BUILD PHASE INSTEAD OF AUTO-STARTING NEXT WAVE ===
-        StartBuildPhase();
-        yield break;
+        yield return new WaitForSeconds(timeBetweenWaves);
+        currentWave++;
+        StartNextWave();
     }
 
     
