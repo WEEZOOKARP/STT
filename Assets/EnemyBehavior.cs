@@ -162,15 +162,15 @@ public class EnemyBehavior : MonoBehaviour
     public void TakeDamage(int amount)
     {
         if (isDead) return;
-        var lvl = player ? player.GetComponent<Leveling>() : null;
+
        
-        int finalDamage = Mathf.RoundToInt(amount * damageTakenMultiplier * lvl.playerStats.GetPlayerMultipliers().Damage);
+        int finalDamage = Mathf.RoundToInt(amount * damageTakenMultiplier);
 
         currentHealth -= finalDamage;
         StartCoroutine(DamageFlash());
 
         if (currentHealth <= 0)
-            Die(); // if you say so - William
+            Die();
     }
 
 
@@ -196,7 +196,7 @@ public class EnemyBehavior : MonoBehaviour
 
         // Reward player
         var lvl = player ? player.GetComponent<Leveling>() : null;
-        if (lvl) lvl.AddExperience(isBoss ? 100f : 5f);
+        if (lvl) lvl.AddExperience(isBoss ? 100f : 20f);
 
         if (MetaProgression.Instance != null)
             MetaProgression.Instance.KillEnemy(gameObject.name, isBoss);

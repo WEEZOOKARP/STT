@@ -1,8 +1,8 @@
 
 using UnityEngine;
+using UnityEngine.Events;
 
 [DisallowMultipleComponent]
-[RequireComponent(typeof(Collider))]
 public class StrongholdHealth : MonoBehaviour
 {
     [Header("Health")]
@@ -11,41 +11,17 @@ public class StrongholdHealth : MonoBehaviour
     public int CurrentHealth => currentHealth;
     public int MaxHealth => maxHealth;
 
+    public UnityEvent<int, int> OnHealthChanged;
+    public UnityEvent OnDestroyed;
+
     [Header("Damage Handling")]
     [Tooltip("Used if EnemyBehavior doesn't expose a damage field.")]
     public int fallbackEnemyDamage = 10;
 
-    [Header("Zero-HP Behaviour")]
-    [Tooltip("Destroy this stronghold object when health reaches zero.")]
-    public bool destroyOnZeroHealth = true;
-    [Tooltip("Optionally notify GameManager.GameOver() on destruction.")]
-    public bool triggerGameOver = true;
-    [Tooltip("Delay before destroying, to allow VFX/SFX.")]
-    public float destroyDelay = 0.15f;
-
-    // Reference to HUD bar (auto-assigned)
-    private StrongholdHealthBar hudBar;
-
-    void Reset()
-    {
-        var col = GetComponent<Collider>();
-        col.isTrigger = true;
-    }
-
     void Awake()
     {
         currentHealth = Mathf.Max(1, maxHealth);
-
-        // Auto-find HUD bar in scene
-        hudBar = FindObjectOfType<StrongholdHealthBar>();
-        if (hudBar == null)
-        {
-            Debug.LogWarning("No StrongholdHealthBar found in scene. HUD will not update.");
-        }
-        else
-        {
-            hudBar.SetHealth(currentHealth, maxHealth);
-        }
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
     }
 
     public void TakeDamage(int amount)
@@ -53,35 +29,19 @@ public class StrongholdHealth : MonoBehaviour
         if (amount <= 0 || currentHealth <= 0) return;
 
         currentHealth = Mathf.Max(0, currentHealth - amount);
-
-        // Update HUD
-        if (hudBar != null)
-            hudBar.SetHealth(currentHealth, maxHealth);
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
 
         if (currentHealth == 0)
         {
             Debug.Log("[Stronghold] Destroyed!");
-
-            if (hudBar != null)
-                hudBar.HideOnDestroyed();
-
-            if (triggerGameOver && GameManager.Instance != null)
-            {
-                GameManager.Instance.GameOver();
-            }
-
-            if (destroyOnZeroHealth)
-            {
-                Destroy(gameObject, destroyDelay);
-            }
+            OnDestroyed?.Invoke();
         }
     }
 
     public void ResetHealth()
     {
         currentHealth = maxHealth;
-        if (hudBar != null)
-            hudBar.SetHealth(currentHealth, maxHealth);
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
     }
 
     void OnTriggerEnter(Collider other)
@@ -94,6 +54,7 @@ public class StrongholdHealth : MonoBehaviour
 
         TakeDamage(dmg);
 
+        // kill the enemy on contact
         var enemyGo = other.attachedRigidbody ? other.attachedRigidbody.gameObject : other.gameObject;
         Destroy(enemyGo);
     }

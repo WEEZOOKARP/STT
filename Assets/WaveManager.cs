@@ -248,15 +248,18 @@ public class WaveManager : MonoBehaviour
 
     public void StartNextWave()
     {
-        Debug.Log($"[WaveManager] StartNextWave() -> wave {currentWave}");
-        if (currentWave > maxWaves) { OnAllWavesComplete?.Invoke(); return; }
-        buildPhaseActive = false;
+        if (currentWave > maxWaves)
+        {
+            OnAllWavesComplete?.Invoke();
+            return;
+        }
+
+        buildPhaseActive = false; // ensure off
         currentWaveCoroutine = StartCoroutine(RunWave(currentWave));
     }
 
     IEnumerator RunWave(int waveNumber)
     {
-        Debug.Log($"[WaveManager] RunWave({waveNumber}) starting");
         isWaveActive = true;
         OnWaveStart?.Invoke(waveNumber);
 
@@ -335,16 +338,10 @@ public class WaveManager : MonoBehaviour
     /// </summary>
     public void FinishBuildPhase()
     {
-        // Log for sanity
-        Debug.Log($"[WaveManager] FinishBuildPhase() pressed. buildPhaseActive={buildPhaseActive}, currentWave={currentWave}");
-
-        // Don’t gate behind buildPhaseActive – just proceed
+        if (!buildPhaseActive) return;
         buildPhaseActive = false;
 
-        if (timeBetweenWaves > 0f)
-        {
-            StartCoroutine(StartNextWaveAfterDelay(timeBetweenWaves));
-        }
+        if (timeBetweenWaves > 0f) StartCoroutine(StartNextWaveAfterDelay(timeBetweenWaves));
         else
         {
             currentWave++;

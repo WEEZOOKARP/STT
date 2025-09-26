@@ -12,10 +12,6 @@ public class PlayerStats
     public int damageMult = 1; // increase damage
     public int reloadMult = 1; // reload speed multiplier
     public int projectileLifestealMult = 0; // when you hit an enemy you heal
-
-    public (int Health, int Damage, int Reload, int ProjectileLifesteal) GetPlayerMultipliers() {
-        return (healthMult, damageMult, reloadMult, projectileLifestealMult);
-    }
 }
 
 [Serializable]
