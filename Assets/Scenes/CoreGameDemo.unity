@@ -45404,8 +45404,8 @@ Transform:
   m_GameObject: {fileID: 2024371883864242540}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.4, z: 1.98}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0.2}
+  m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4026260613166787361}
@@ -91505,8 +91505,8 @@ MonoBehaviour:
   bulletSpawn: {fileID: 8685248584999590872}
   bulletSpeed: 500
   bulletLifeTime: 2
-  spreadAngle: 0
-  pelletCount: 1
+  spreadAngle: 15
+  pelletCount: 15
   cooldownTime: 1
   ammo: {fileID: 7903341047557372619}
   muzzleFlash: {fileID: 7446190664108338876}
