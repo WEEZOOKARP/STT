@@ -2538,14 +2538,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c9791ff3cd3285b40bba042d7254ec46, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  experience: 0
   level: 1
+  experience: 0
+  SkillPoints: 0
   incrimentPerLevel: 50
+  playerStats:
+    healthMult: 1
+    damageMult: 1
+    reloadMult: 1
+    projectileLifestealMult: 0
   experienceBar: {fileID: 0}
+  levelUpButton: {fileID: 0}
   levelText: {fileID: 0}
   SkillPointsText: {fileID: 0}
-  levelUpButton: {fileID: 0}
-  SkillPoints: 0
+  skills: []
 --- !u!4 &968063385
 Transform:
   m_ObjectHideFlags: 0
@@ -19441,14 +19447,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c9791ff3cd3285b40bba042d7254ec46, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  experience: 0
   level: 1
+  experience: 0
+  SkillPoints: 0
   incrimentPerLevel: 50
+  playerStats:
+    healthMult: 1
+    damageMult: 1
+    reloadMult: 1
+    projectileLifestealMult: 0
   experienceBar: {fileID: 0}
+  levelUpButton: {fileID: 0}
   levelText: {fileID: 1577716914692831394}
   SkillPointsText: {fileID: 0}
-  levelUpButton: {fileID: 0}
-  SkillPoints: 0
+  skills: []
 --- !u!33 &835629848867937944
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -50229,9 +50241,9 @@ MonoBehaviour:
   bulletLifeTime: 2
   spreadAngle: 0
   pelletCount: 1
-  cooldownTime: 0.5
+  cooldownTime: 0.05
   ammo: {fileID: 7903341047557372619}
-  muzzleFlash: {fileID: 7799659300726561722}
+  muzzleFlash: {fileID: 1935639612809595656}
   gunSound: {fileID: 8866218695880070402}
   shootSound: {fileID: 8300000, guid: 604cda6976139488098904dd48726bcf, type: 3}
   reloadSound: {fileID: 8300000, guid: 028c14bbc6e034647809da49fdc38a51, type: 3}
@@ -91494,7 +91506,7 @@ MonoBehaviour:
   bulletLifeTime: 2
   spreadAngle: 0
   pelletCount: 1
-  cooldownTime: 0.5
+  cooldownTime: 1
   ammo: {fileID: 7903341047557372619}
   muzzleFlash: {fileID: 7446190664108338876}
   gunSound: {fileID: 6810258615718486860}
