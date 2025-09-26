@@ -278,7 +278,10 @@ public class WaveManager : MonoBehaviour
 
             // exit when counter says zero OR when there are simply no tracked enemies left
             if (enemiesRemaining <= 0 || activeEnemies.Count == 0)
+            {
+                Debug.Log($"Wave {waveNumber} complete! Enemies remaining: {enemiesRemaining}, Active enemies: {activeEnemies.Count}");
                 break;
+            }
 
             yield return null;
         }
@@ -353,6 +356,7 @@ public class WaveManager : MonoBehaviour
     {
         yield return new WaitForSeconds(delay);
         currentWave++;
+        Debug.Log($"Starting wave {currentWave}");
         StartNextWave();
     }
     // ------------------------------------------------
@@ -728,7 +732,9 @@ public class WaveManager : MonoBehaviour
     {
         activeEnemies.Remove(enemy);
         enemiesRemaining--;
-
+        
+        Debug.Log($"Enemy died! Remaining: {enemiesRemaining}, Active enemies: {activeEnemies.Count}");
+        
         // Check if this was a boss
         EnemyBehavior behavior = enemy.GetComponent<EnemyBehavior>();
         if (behavior != null)
