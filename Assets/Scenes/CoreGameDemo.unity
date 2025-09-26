@@ -329,7 +329,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHealth: 100
-  healthBar: {fileID: 0}
+  healthBar: {fileID: 2392029791023905422}
   player: {fileID: 112120722}
   isdead: 0
 --- !u!135 &112120726
@@ -776,8 +776,8 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 3287639534512793018}
   - {fileID: 968063385}
+  - {fileID: 3287639534512793018}
   m_Father: {fileID: 1496820803}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &395044060
@@ -1528,11 +1528,11 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8393614530712109051}
-  - {fileID: 894091948}
-  - {fileID: 1518848421}
-  - {fileID: 874467003}
   - {fileID: 4576605598781629455}
   - {fileID: 4607296025906218710}
+  - {fileID: 1518848421}
+  - {fileID: 894091948}
+  - {fileID: 874467003}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -2207,7 +2207,7 @@ MonoBehaviour:
   currentWave: 1
   isWaveActive: 0
   enemiesRemaining: 0
-  buildPhaseActive: 0
+  buildPhaseActive: 1
   autoStartOnAwake: 0
   logWaveCompositions: 0
 --- !u!114 &758841580
@@ -2224,6 +2224,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   placer: {fileID: 758841576}
   waveManager: {fileID: 758841579}
+  gunController: {fileID: 2213206426285941394}
   buildPanel: {fileID: 874467002}
   pieceName: {fileID: 0}
   wallIndex: 0
@@ -45402,7 +45403,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2024371883864242540}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: -0.4, z: 1.98}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0

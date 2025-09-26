@@ -101,6 +101,11 @@ public class GunController : MonoBehaviour
             currentGun.ReloadWeapon();
     }
 
+   public void EnableGun(bool enable)
+   {
+       this.enabled = enable; // Enable or disable the whole GunController script
+   }
+
 }
 
 

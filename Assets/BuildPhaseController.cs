@@ -7,6 +7,7 @@ public class BuildPhaseController : MonoBehaviour
     [Header("References")]
     public ARWallPlacementManager placer;   // assign your ARWallPlacementManager in the scene
     public WaveManager waveManager;         // assign your WaveManager in the scene
+    public GunController gunController;
 
     [Header("UI")]
     public GameObject buildPanel;           // the panel you created
@@ -17,10 +18,16 @@ public class BuildPhaseController : MonoBehaviour
     public int damagePoleIndex = 1;
     public int slowPoleIndex = 2;
 
+    void Start()
+    {
+        if (gunController) gunController.EnableGun(false);
+    }
+
     void Awake()
     {
         if (!placer) placer = FindObjectOfType<ARWallPlacementManager>();
         if (!waveManager) waveManager = FindObjectOfType<WaveManager>();
+        if (!gunController) gunController = FindObjectOfType<GunController>();
     }
 
     void OnEnable()
@@ -47,6 +54,9 @@ public class BuildPhaseController : MonoBehaviour
     public void ShowBuildPanel()
     {
         if (buildPanel) buildPanel.SetActive(true);
+
+        if (gunController) gunController.EnableGun(false);
+
         if (placer)
         {
             placer.SelectWallType(wallIndex);
@@ -58,6 +68,9 @@ public class BuildPhaseController : MonoBehaviour
     public void HideBuildPanel()
     {
         if (buildPanel) buildPanel.SetActive(false);
+        // Enable gun after building
+        if (gunController) gunController.EnableGun(true);
+
         if (placer) placer.HideGhost();
     }
 
@@ -94,12 +107,12 @@ public class BuildPhaseController : MonoBehaviour
 
     public void FinishBuild()
     {
-        HideBuildPanel();
-        if (waveManager != null)
-        {
-            // ✅ Matches your WaveManager API
-            waveManager.FinishBuildPhase();
-        }
+       HideBuildPanel();
+
+       if (waveManager != null)
+       {
+          waveManager.FinishBuildPhase();
+       }
     }
 
     void UpdatePieceName()

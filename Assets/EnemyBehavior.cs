@@ -3,7 +3,6 @@ using UnityEngine.AI;
 
 public class EnemyBehavior : MonoBehaviour
 {
-    private Animator animator;
 
     [Header("Enemy Stats")]
     public int maxHealth = 50;
@@ -97,8 +96,6 @@ public class EnemyBehavior : MonoBehaviour
         var renderer = visual.GetComponent<Renderer>();
         if (renderer) renderer.material.color = isBoss ? Color.red : Color.blue;
         Destroy(visual.GetComponent<Collider>());
-        animator = GetComponentInChildren<Animator>() ?? GetComponent<Animator>();
-        if (!animator) animator = gameObject.AddComponent<Animator>(); // safe default (won't play clips unless assigned)
     }
 
     // ----------------- Frame Update -----------------
@@ -160,9 +157,6 @@ public class EnemyBehavior : MonoBehaviour
         lastAttackTime = Time.time;
         Status playerStatus = player ? player.GetComponent<Status>() : null;
         if (playerStatus) playerStatus.TakeDamage(damage);
-        // Optional animation trigger
-        if (animator) animator.SetTrigger("ATTACK");
-        // Debug.Log($"{name} attacked player for {damage}!");
     }
 
     public void TakeDamage(int amount)
@@ -197,7 +191,6 @@ public class EnemyBehavior : MonoBehaviour
     void Die()
     {
         isDead = true;
-        if (animator) animator.SetTrigger("DEATH");
         if (agent) agent.enabled = false;
         var col = GetComponent<Collider>(); if (col) col.enabled = false;
 
@@ -210,10 +203,7 @@ public class EnemyBehavior : MonoBehaviour
 
         OnDeath?.Invoke(gameObject);
 
-        float deathTime = (animator != null)
-            ? animator.GetCurrentAnimatorStateInfo(0).length
-            : 0.25f;
-        Destroy(gameObject, deathTime + 0.2f);
+        Destroy(gameObject);
     }
 
     // ----------------- Helpers -----------------
