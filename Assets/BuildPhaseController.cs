@@ -56,6 +56,10 @@ public class BuildPhaseController : MonoBehaviour
         if (buildPanel) buildPanel.SetActive(true);
 
         if (gunController) gunController.EnableGun(false);
+        
+        //Unlocks the cursor
+        Cursor.lockState = CursorLockMode.None;   
+        Cursor.visible = true;                 
 
         if (placer)
         {
@@ -72,6 +76,10 @@ public class BuildPhaseController : MonoBehaviour
         if (gunController) gunController.EnableGun(true);
 
         if (placer) placer.HideGhost();
+
+        //relock cursor for gameplay
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     public void SelectWall()
