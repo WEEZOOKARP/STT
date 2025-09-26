@@ -3,7 +3,7 @@ using UnityEngine;
 public class Bullet : MonoBehaviour
 {
     public GameObject bloodMistPrefab;
-    public int damage=10;
+    public int damage;
 
     void OnCollisionEnter(Collision c)
     {
