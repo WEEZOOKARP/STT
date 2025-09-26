@@ -6,6 +6,10 @@ public class TimerCondition : TutorialCondition
     [Header("Timer Settings")]
     public float duration = 3f;
     private float startTime;
+    
+    [Header("Optional Input Checking")]
+    [Tooltip("If true, also check for WASD input during timer")]
+    public bool requireMovementInput = false;
 
     public override void StartCondition() {
         startTime = Time.time;
@@ -14,13 +18,28 @@ public class TimerCondition : TutorialCondition
     }
 
     public override bool IsConditionMet() {
-        bool completed = Time.time - startTime >= duration;
+        bool timeComplete = Time.time - startTime >= duration;
+        bool inputComplete = true; // Default to true if not requiring input
+        
+        // If we require movement input, check for WASD
+        if (requireMovementInput) {
+            inputComplete = CheckMovementInput();
+        }
+        
+        bool completed = timeComplete && inputComplete;
         if (completed && !isCompleted)
         {
             isCompleted = true;
             Debug.Log("[TimerCondition] Condition completed!");
         }
         return completed;
+    }
+    
+    private bool CheckMovementInput() {
+        // Check for WASD input - Added by Archie [26/09/25]
+        // Purpose: Allow tutorial to detect if player has tried moving
+        return Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.A) || 
+               Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.D);
     }
 
     public override void ResetCondition() {

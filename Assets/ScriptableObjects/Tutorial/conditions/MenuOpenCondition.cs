@@ -86,7 +86,7 @@ public class MenuOpenCondition : TutorialCondition
     // Called when MenuManager fires OnMenuOpened event.
     private void OnMenuOpened()
     {
-        Debug.Log("[MenuOpenCondition] Menu opened - condition progress updated");
+        Debug.Log($"[MenuOpenCondition] Menu opened - condition progress updated. requireMenuClose={requireMenuClose}");
         menuWasOpened = true;
         
         if (!requireMenuClose)
@@ -94,6 +94,10 @@ public class MenuOpenCondition : TutorialCondition
             // Complete immediately when menu opens
             isCompleted = true;
             Debug.Log("[MenuOpenCondition] Condition completed (menu opened)!");
+        }
+        else
+        {
+            Debug.Log("[MenuOpenCondition] Waiting for menu to close before completing");
         }
     }
     
