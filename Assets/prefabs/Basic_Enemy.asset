@@ -25,6 +25,6 @@ MonoBehaviour:
     bossLootTableName: 
     spawnWeight: 0
     minWave: 1
-    maxWave: 1
-    maxPerWave: 5
-    difficultyCost: 0
+    maxWave: 100
+    maxPerWave: 10
+    difficultyCost: 1
