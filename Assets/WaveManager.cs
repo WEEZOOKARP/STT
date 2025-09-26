@@ -53,6 +53,9 @@ public class WaveManager : MonoBehaviour
     public int strongholdCurrentHealth => stronghold ? stronghold.CurrentHealth : 0;
     public int strongholdMaxHealth => stronghold ? stronghold.MaxHealth : 0;
 
+    // Event for tutorial condition subscribed to wave completion event - Archie | [25/09/25].
+    public static event System.Action<int> OnWaveCompleted;
+
     [Header("Enemy Types")]
     public List<EnemyType> availableEnemyTypes = new List<EnemyType>();
 
@@ -284,6 +287,7 @@ public class WaveManager : MonoBehaviour
         // Wave complete
         isWaveActive = false;
         OnWaveComplete?.Invoke(waveNumber);
+        OnWaveCompleted?.Invoke(waveNumber); // Tutorial event - Archie | [25/09/25]
 
         // Track wave completion in meta progression
         if (MetaProgression.Instance != null)
