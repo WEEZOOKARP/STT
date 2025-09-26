@@ -15,6 +15,7 @@ public class GunController : MonoBehaviour
 
     private bool canShoot = true;
     private float xRotation = 0f; // vertical pitch
+    private float yRotation = 0f; // horizontal yaw (local, so we don't spin the world)
 
     void Start()
     {
@@ -74,8 +75,11 @@ public class GunController : MonoBehaviour
             xRotation -= mouseY;
             xRotation = Mathf.Clamp(xRotation, -80f, 80f);
 
-            playerCamera.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f); // pitch
-            cameraParent.Rotate(Vector3.up * mouseX);                                   // yaw
+            //playerCamera.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f); // pitch
+            // cameraParent.Rotate(Vector3.up * mouseX);                                   // yaw
+
+            playerCamera.transform.localRotation = Quaternion.Euler(xRotation, yRotation, 0f);// changed this so it apply both pitch and yaw to the camera locally (do NOT rotate cameraParent)
+
         }
         else
         {
