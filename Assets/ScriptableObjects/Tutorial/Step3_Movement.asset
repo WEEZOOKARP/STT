@@ -19,7 +19,7 @@ MonoBehaviour:
   requiresARInteraction: 0
   spatialPosition: {x: 0, y: 0, z: 0}
   useWorldSpaceUI: 0
-  completionCondition: {fileID: 11400000, guid: 7afb8bf0259ddeb4f9344d876c1a9fde, type: 2}
+  completionCondition: {fileID: 11400000, guid: a3540be019cce48449d12fca602c82b0, type: 2}
   timeoutDuration: 30
   uiPrefab: {fileID: 0}
   showProgressBar: 0
