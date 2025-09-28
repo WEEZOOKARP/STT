@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19b7d0693b0117447aecc2332789a93a, type: 3}
   m_Name: Step4_Menu
   m_EditorClassIdentifier: 
-  stepName: 
-  stepOrder: 0
-  instructionText: 
+  stepName: Learning about menus!
+  stepOrder: 4
+  instructionText: Press ESC to open the pause menu! 
   instructionImage: {fileID: 0}
   requiresARInteraction: 0
   spatialPosition: {x: 0, y: 0, z: 0}

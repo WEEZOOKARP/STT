@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Step2_Reload
   m_EditorClassIdentifier: 
   stepName: Learning to reload!
-  stepOrder: 0
+  stepOrder: 2
   instructionText: Press 'Z' to reload your weapon!
   instructionImage: {fileID: 0}
   requiresARInteraction: 0

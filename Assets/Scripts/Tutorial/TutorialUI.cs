@@ -27,14 +27,25 @@ public class TutorialUI : MonoBehaviour
 
     void OnStepStarted(TutorialStep step)
     {
-        if (step != null && instructionText != null)
+        if (step == null)
         {
-            instructionText.text = step.instructionText;
+            Debug.LogError("Tutorial step is null.");
+            return;
         }
-        else
+        
+        if (instructionText == null)
         {
-            Debug.LogError("Tutorial step is null or instruction text is null.");
+            Debug.LogError("Instruction text UI component is null.");
+            return;
         }
+        
+        if (string.IsNullOrEmpty(step.instructionText))
+        {
+            Debug.LogError($"Tutorial step '{step.stepName}' has empty instruction text.");
+            return;
+        }
+        
+        instructionText.text = step.instructionText;
 
         if (tutorialPanel != null)
         {
