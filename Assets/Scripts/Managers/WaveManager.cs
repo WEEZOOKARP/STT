@@ -201,8 +201,6 @@ public class WaveManager : MonoBehaviour
     {
         InitializeEnemyTypes();
         ResetState();
-        musicManager mm = FindObjectOfType<musicManager>();
-        mm.beginPlay("Battle");
         currentWave = Mathf.Max(1, startingWave);
         if (stronghold) stronghold.ResetHealth();
 
@@ -256,6 +254,8 @@ public class WaveManager : MonoBehaviour
         Debug.Log($"[WaveManager] StartNextWave() -> wave {currentWave}");
         if (currentWave > maxWaves) { OnAllWavesComplete?.Invoke(); return; }
         buildPhaseActive = false;
+        musicManager mm = FindObjectOfType<musicManager>();
+        mm.beginPlay("Battle");
         currentWaveCoroutine = StartCoroutine(RunWave(currentWave));
     }
 
