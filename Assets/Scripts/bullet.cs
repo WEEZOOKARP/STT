@@ -29,6 +29,16 @@ public class Bullet : MonoBehaviour
             contact.point + contact.normal * 0.01f,
             Quaternion.LookRotation(contact.normal));
 
+        // Automatically destroy after the particle finishes
+        ParticleSystem ps = fx.GetComponent<ParticleSystem>();
+        if (ps != null)
+        {
+          Destroy(fx, ps.main.duration + ps.main.startLifetime.constantMax);
+        }else{
+        // destroy after 2 seconds if no ParticleSystem component
+          Destroy(fx, 2f);
+        }
     }
+
 }
 
