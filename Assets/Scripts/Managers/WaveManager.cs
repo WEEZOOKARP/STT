@@ -201,6 +201,8 @@ public class WaveManager : MonoBehaviour
     {
         InitializeEnemyTypes();
         ResetState();
+        musicManager mm = FindObjectOfType<musicManager>();
+        mm.beginPlay("Battle");
         currentWave = Mathf.Max(1, startingWave);
         if (stronghold) stronghold.ResetHealth();
 
@@ -318,9 +320,10 @@ public class WaveManager : MonoBehaviour
     // ---------- BUILD PHASE CONTROL (NEW) ----------
     public void StartBuildPhase()
     {
+        musicManager mm = FindObjectOfType<musicManager>();
         buildPhaseActive = true;
         isWaveActive = false;
-
+        mm.beginPlay("Calm");
         // fire the event (keeps things decoupled if you use it)
         OnBuildPhaseStarted?.Invoke(currentWave);
 
