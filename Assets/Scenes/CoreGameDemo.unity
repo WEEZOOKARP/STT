@@ -152,8 +152,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 862, y: 0}
-  m_SizeDelta: {x: 1724, y: 1036}
+  m_AnchoredPosition: {x: 862, y: 0.25}
+  m_SizeDelta: {x: 1724, y: 1035.5}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &15183096
 GameObject:
@@ -7354,7 +7354,7 @@ GameObject:
   - component: {fileID: 1874324523}
   - component: {fileID: 1874324522}
   m_Layer: 5
-  m_Name: Daily Challenge Box
+  m_Name: Daily Challenge List
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
