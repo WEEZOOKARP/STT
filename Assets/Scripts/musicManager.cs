@@ -14,7 +14,6 @@ public class musicManager : MonoBehaviour
     [Header("Settings")]
     [Range(0f, 1f)] public float globalMusicVolume = 1f; // global for player settings
 
-
     private AudioSource currentMusic;
 
     void Start(){
