@@ -164,6 +164,9 @@ public class GameManager : MonoBehaviour
             metaProgression.StartActualGame(); // Changed to StartActualGame so it's more descriptive - Archie | [25/09/25].
         }
 
+        // Notify DailyTaskManager that the game started
+        DailyTaskManager.Instance?.OnGameStarted();
+
         // Hide UI panels
         if (gameOverPanel != null)
             gameOverPanel.SetActive(false);
@@ -185,6 +188,9 @@ public class GameManager : MonoBehaviour
 
     void OnAllWavesComplete()
     {
+        // Report all waves complete to DailyTaskManager
+        DailyTaskManager.Instance?.OnWavesCompleted();
+
         GameVictory();
     }
 

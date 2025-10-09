@@ -171,6 +171,8 @@ public void TakeDamage(int amount)
     }
 
     int finalDamage = Mathf.RoundToInt(amount * damageTakenMultiplier * playerDamageMultiplier);
+    // Report hit to DailyTaskManager
+    DailyTaskManager.Instance?.OnEnemyTakeDamage();
 
     currentHealth -= finalDamage;
     StartCoroutine(DamageFlash());
@@ -206,6 +208,9 @@ public void TakeDamage(int amount)
 
         if (MetaProgression.Instance != null)
             MetaProgression.Instance.KillEnemy(gameObject.name, isBoss);
+
+        // Report kill to DailyTaskManager
+        DailyTaskManager.Instance?.OnEnemyKilled();
 
         OnDeath?.Invoke(gameObject);
 
