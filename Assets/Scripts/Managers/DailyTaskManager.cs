@@ -148,7 +148,7 @@ public class DailyTaskManager : MonoBehaviour
         if (allComplete)
         {
             rewardGiven = true;
-            ShowTaskUI("Daily Challenge Complete!");
+            ShowTaskUI("DAILY TASK COMPLETE!\n +$100");
             Debug.Log("Daily Challenge Complete! +50 XP +$100");
 
            // Add gold using GoldService (handles fallback if MetaProgression not ready)
