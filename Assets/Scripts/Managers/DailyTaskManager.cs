@@ -9,7 +9,7 @@ public class DailyTaskManager : MonoBehaviour
     [Header("UI References")]
     public GameObject dailyChallengeUI;
     public CanvasGroup canvasGroup;
-    public Toggle playOnceToggle;
+    public Toggle reloadOnceToggle;
     public Toggle hitEnemyToggle;
     public Toggle killTenEnemiesToggle;
     public TMP_Text completeText;
@@ -21,7 +21,7 @@ public class DailyTaskManager : MonoBehaviour
     [Header("Settings")]
     public int requiredKills = 10;
 
-    private bool playedOnce = false;
+    private bool reloadOnce = false;
     private bool hitEnemy = false;
     private int enemiesKilled = 0;
     private bool rewardGiven = false;
@@ -40,7 +40,7 @@ public class DailyTaskManager : MonoBehaviour
         CheckDailyReset();
 
         // Hide all toggles and UI at start
-        if (playOnceToggle) playOnceToggle.gameObject.SetActive(false);
+        if (reloadOnceToggle) reloadOnceToggle.gameObject.SetActive(false);
         if (hitEnemyToggle) hitEnemyToggle.gameObject.SetActive(false);
         if (killTenEnemiesToggle) killTenEnemiesToggle.gameObject.SetActive(false);
         if (completeText) completeText.gameObject.SetActive(false);
@@ -50,12 +50,12 @@ public class DailyTaskManager : MonoBehaviour
     }
 
     // Called when player starts/enters a game
-    public void OnGameStarted()
+    public void OnReload()
     {
-        if (!playedOnce)
+        if (!reloadOnce)
         {
-            playedOnce = true;
-            ActivateToggle(playOnceToggle, "Played Once!");
+            reloadOnce = true;
+            ActivateToggle(reloadOnceToggle, "Reload Once!");
             CheckCompletion();
         }
     }
@@ -93,8 +93,8 @@ public class DailyTaskManager : MonoBehaviour
     // Check all tasks status
     public void CheckDailyTaskProgress()
     {
-        if (playedOnce && !playOnceToggle.isOn)
-            ActivateToggle(playOnceToggle, "Played Once!");
+        if (reloadOnce && !reloadOnceToggle.isOn)
+            ActivateToggle(reloadOnceToggle, "Reload Once!");
 
         if (hitEnemy && !hitEnemyToggle.isOn)
             ActivateToggle(hitEnemyToggle, "Hit an enemy!");
@@ -143,7 +143,7 @@ public class DailyTaskManager : MonoBehaviour
     {
         if (rewardGiven) return;
 
-        bool allComplete = playedOnce && hitEnemy && enemiesKilled >= requiredKills;
+        bool allComplete = reloadOnce && hitEnemy && enemiesKilled >= requiredKills;
 
         if (allComplete)
         {
@@ -151,11 +151,23 @@ public class DailyTaskManager : MonoBehaviour
             ShowTaskUI("Daily Challenge Complete!");
             Debug.Log("Daily Challenge Complete! +50 XP +$100");
 
-            if (MetaProgression.Instance != null)
-            {
-                MetaProgression.Instance.AddMetaCurrency(rewardMoney);
+           // Add gold using GoldService (handles fallback if MetaProgression not ready)
+           if (GoldService.Instance != null)
+           {
+                 GoldService.Instance.Add(rewardMoney);
+           }
+           else if (MetaProgression.Instance != null)
+           {
+                 // fallback (shouldn’t happen often)
+                 MetaProgression.Instance.AddMetaCurrency(rewardMoney);
+           }
+
+           // XP still needs MetaProgression directly
+           if (MetaProgression.Instance != null)
+           {
                 MetaProgression.Instance.GainExperience(rewardXP);
-            }
+           }
+
         }
     }
 
@@ -175,12 +187,12 @@ public class DailyTaskManager : MonoBehaviour
 
     private void ResetDailyChallenge()
     {
-        playedOnce = false;
+        reloadOnce = false;
         hitEnemy = false;
         enemiesKilled = 0;
         rewardGiven = false;
 
-        if (playOnceToggle) { playOnceToggle.isOn = false; playOnceToggle.gameObject.SetActive(false); }
+        if (reloadOnceToggle) { reloadOnceToggle.isOn = false; reloadOnceToggle.gameObject.SetActive(false); }
         if (hitEnemyToggle) { hitEnemyToggle.isOn = false; hitEnemyToggle.gameObject.SetActive(false); }
         if (killTenEnemiesToggle) { killTenEnemiesToggle.isOn = false; killTenEnemiesToggle.gameObject.SetActive(false); }
 

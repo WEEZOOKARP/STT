@@ -156,6 +156,8 @@ public class GunController : MonoBehaviour
     {
         if (currentGun != null)
             currentGun.ReloadWeapon();
+            // Notify DailyTaskManager that the game started
+            DailyTaskManager.Instance?.OnReload();
 
         OnReloadStarted?.Invoke(); // Invoking event for tutorial condition subscribed to reload event - Archie | [25/09/25].
     }
