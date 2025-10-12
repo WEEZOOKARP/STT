@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -59,8 +60,8 @@ public class EnemyBehavior : MonoBehaviour
     public void Initialize(EnemyType enemyType)
     {
         maxHealth = enemyType.health;
-        moveSpeed = enemyType.speed;
-        damage = enemyType.damage;
+        moveSpeed = enemyType.speed * PlayerPrefs.GetFloat("enemyDMG", 1f);
+        damage = (int)Math.Floor(enemyType.damage * PlayerPrefs.GetFloat("enemyDMG", 1f)); ;
         isBoss = enemyType.isBoss;
         lootTableName = enemyType.lootTableName;
         lootDropChance = enemyType.lootDropChance;
