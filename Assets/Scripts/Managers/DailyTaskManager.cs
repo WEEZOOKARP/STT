@@ -20,6 +20,9 @@ public class DailyTaskManager : MonoBehaviour
 
     [Header("Settings")]
     public int requiredKills = 10;
+    public AudioSource dailyTaskSound;
+    public AudioClip taskCompleteSound;
+    public AudioClip allTaskCompleteSound;
 
     private bool reloadOnce = false;
     private bool hitEnemy = false;
@@ -112,6 +115,10 @@ public class DailyTaskManager : MonoBehaviour
         toggle.isOn = true;
         toggle.gameObject.SetActive(true);
         ShowTaskUI(message);
+        //play task complete sound
+        if (dailyTaskSound && taskCompleteSound)
+        dailyTaskSound.PlayOneShot(taskCompleteSound);
+
         Debug.Log($"[DailyTask] {message}");
     }
 
@@ -150,6 +157,9 @@ public class DailyTaskManager : MonoBehaviour
             rewardGiven = true;
             ShowTaskUI("DAILY TASK COMPLETE!\n +$100\n +XP50");
             Debug.Log("Daily Challenge Complete! +50 XP +$100");
+            //play all task complete sound
+            if (dailyTaskSound && allTaskCompleteSound)
+            dailyTaskSound.PlayOneShot(allTaskCompleteSound);
 
            // Add gold using GoldService (handles fallback if MetaProgression not ready)
            if (GoldService.Instance != null)
