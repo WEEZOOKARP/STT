@@ -148,7 +148,7 @@ public class DailyTaskManager : MonoBehaviour
         if (allComplete)
         {
             rewardGiven = true;
-            ShowTaskUI("DAILY TASK COMPLETE!\n +$100");
+            ShowTaskUI("DAILY TASK COMPLETE!\n +$100\n +XP50");
             Debug.Log("Daily Challenge Complete! +50 XP +$100");
 
            // Add gold using GoldService (handles fallback if MetaProgression not ready)
@@ -162,10 +162,21 @@ public class DailyTaskManager : MonoBehaviour
                  MetaProgression.Instance.AddMetaCurrency(rewardMoney);
            }
 
-           // XP still needs MetaProgression directly
-           if (MetaProgression.Instance != null)
+           // Award XP
+           Leveling lvl = FindObjectOfType<Leveling>();
+           if (lvl != null)
            {
-                MetaProgression.Instance.GainExperience(rewardXP);
+               lvl.AddExperience(rewardXP);
+               Debug.Log($"[DailyTask] Awarded {rewardXP} XP to player.");
+           }
+           else if (MetaProgression.Instance != null)
+           {
+               MetaProgression.Instance.GainExperience(rewardXP);
+               Debug.Log($"[DailyTask] Awarded {rewardXP} XP via MetaProgression.");
+           }
+           else
+           {
+              Debug.LogWarning("[DailyTask] No Leveling or MetaProgression found for XP reward!");
            }
 
         }

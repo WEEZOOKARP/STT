@@ -113,7 +113,7 @@ public class Gun : MonoBehaviour
         if (muzzleFlash) muzzleFlash.Play();
         animator.SetTrigger("RECOIL");
 
-        // 🔊 Single-shot sound still plays each bullet
+        // Single-shot sound still plays each bullet
         // (good for pistols/shotguns or rifles without looping audio)
         if (!rifleLoopSound && gunSound && shootSound)
             gunSound.PlayOneShot(shootSound);
@@ -161,6 +161,8 @@ public class Gun : MonoBehaviour
                 gunSound.PlayOneShot(reloadSound);
             animator.SetTrigger("RELOAD");
             ammo.Reload(5);
+            // Notify DailyTaskManager that the game started
+            DailyTaskManager.Instance?.OnReload();
             Debug.Log($"{gameObject.name} reloaded!");
         }
     }
