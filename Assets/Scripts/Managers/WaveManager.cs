@@ -803,7 +803,9 @@ public class WaveManager : MonoBehaviour
             modifier.lootBonusChance = toughEnemyLootBonus;
         }
 
-        Debug.Log($"✨ [Special Wave] Wave {waveNumber} is {modifier.displayName}!");
+        warningCuscene.Instance?.showWarningCuscene();
+
+        Debug.Log($" [Special Wave] Wave {waveNumber} is {modifier.displayName}!");
         return modifier;
     }
 
