@@ -45,6 +45,10 @@ public class EnemySpawn
 
 public class WaveManager : MonoBehaviour
 {
+    // Store original stats temporarily for restoration
+    private readonly Dictionary<string, (int health, int damage, float speed, float lootDropChance)> originalStats
+    = new Dictionary<string, (int, int, float, float)>();
+
     [Header("Build Phases")]
     public bool useBuildPhases = true;
     [HideInInspector] public bool waitingForBuild = false;
@@ -77,6 +81,7 @@ public class WaveManager : MonoBehaviour
     public float spawnDelayMax = 2.5f;
     public float perEnemySpawnDelayMin = 0.1f;
     public float perEnemySpawnDelayMax = 0.35f;
+    public float spWaveChance = 0.15f;
 
     [Header("Targets")]
     [Tooltip("Stronghold or base the enemies march toward when not pursuing the player.")]
@@ -267,6 +272,11 @@ public class WaveManager : MonoBehaviour
 
         // Generate randomized wave composition
         WaveComposition waveComp = GenerateRandomWave(waveNumber, waveRandom);
+        // Special Wave logic — 15% chance for a special modifier
+        if (UnityEngine.Random.value < spWaveChance)
+        {
+             ApplySpecialWaveModifier(waveComp, waveNumber);
+        }
 
         // Spawn enemies
         yield return StartCoroutine(SpawnWaveEnemies(waveComp, waveRandom));
@@ -366,6 +376,7 @@ public class WaveManager : MonoBehaviour
 
     WaveComposition GenerateRandomWave(int waveNumber, System.Random rng, int rerollDepth = 0)
     {
+        RestoreOriginalEnemyStats();
         WaveComposition wave = new WaveComposition
         {
             waveNumber = waveNumber,
@@ -814,4 +825,79 @@ public class WaveManager : MonoBehaviour
             if (GameManager.Instance) GameManager.Instance.GameOver();
         }
     }
+
+  // ------------------------------------------------------
+  // SPECIAL WAVE LOGIC
+  // ------------------------------------------------------
+  private void ApplySpecialWaveModifier(WaveComposition wave, int waveNumber)
+  {
+      if (wave == null || wave.enemies == null || wave.enemies.Count == 0)
+          return;
+
+      // Decide which special type this wave will be
+      bool isDoubleWave = UnityEngine.Random.value < 0.5f; // 50% chance for either
+      string modifierName = isDoubleWave ? "DOUBLE TROUBLE" : "TOUGHER ENEMIES";
+
+      Debug.Log($" [Special Wave] Wave {waveNumber} is {modifierName}!");
+
+      if (isDoubleWave)
+      {
+          // Double all enemy counts
+          foreach (var spawn in wave.enemies)
+          {
+              spawn.count *= 2;
+          }
+      }
+      else
+      {
+          // Tougher enemies: more health/damage/speed, better loot
+          foreach (var spawn in wave.enemies)
+          {
+              EnemyType enemyType = availableEnemyTypes.Find(e => e.name == spawn.enemyTypeName);
+              if (enemyType == null) continue;
+
+              // Store original stats if not already stored
+            if (!originalStats.ContainsKey(enemyType.name))
+            {
+                originalStats[enemyType.name] = (
+                    enemyType.health,
+                    enemyType.damage,
+                    enemyType.speed,
+                    enemyType.lootDropChance
+                );
+            }
+
+            // Apply temporary buffs
+            enemyType.health = Mathf.RoundToInt(enemyType.health * 2f);
+            enemyType.damage = Mathf.RoundToInt(enemyType.damage * 1.25f);
+            enemyType.speed *= 1.25f;
+            enemyType.lootDropChance = Mathf.Min(1f, enemyType.lootDropChance + 0.25f);
+          }
+      }
+  }
+
+  private void RestoreOriginalEnemyStats()
+{
+    if (originalStats.Count == 0)
+        return;
+
+    foreach (var kvp in originalStats)
+    {
+        string enemyName = kvp.Key;
+        var (health, damage, speed, lootDropChance) = kvp.Value;
+
+        EnemyType enemyType = availableEnemyTypes.Find(e => e.name == enemyName);
+        if (enemyType == null) continue;
+
+        enemyType.health = health;
+        enemyType.damage = damage;
+        enemyType.speed = speed;
+        enemyType.lootDropChance = lootDropChance;
+    }
+
+    originalStats.Clear();
+    Debug.Log("[Special Wave] Enemy stats restored to normal.");
+}
+
+
 }

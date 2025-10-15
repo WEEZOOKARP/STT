@@ -3414,6 +3414,7 @@ MonoBehaviour:
   spawnDelayMax: 2.5
   perEnemySpawnDelayMin: 0.1
   perEnemySpawnDelayMax: 0.35
+  spWaveChance: 0.15
   strongholdTarget: {fileID: 5700047844912584048, guid: e18c29385f1249148aae3b37e696a42c, type: 3}
   playerDetectionAnchor: {fileID: 0}
   currentWave: 1
