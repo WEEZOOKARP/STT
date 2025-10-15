@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-
 using System.Linq;
 using UnityEngine;
 
+#region Data Classes
 [System.Serializable]
 public class EnemyType
 {
@@ -13,16 +13,11 @@ public class EnemyType
     public int health;
     public float speed;
     public int damage;
-    public float spawnWeight = 1f; // Higher weight = more likely to spawn
+    public float spawnWeight = 1f;
     public bool isBoss = false;
     public string lootTableName;
     public float lootDropChance;
     public string bossLootTableName;
-
-    // (These two fields seem unrelated to EnemyType, but keeping them here
-    //  since they existed in your version. Remove if not needed.)
-    public int strongholdMaxHealth = 300;
-    public int strongholdCurrentHealth;
 }
 
 [System.Serializable]
@@ -31,7 +26,7 @@ public class WaveComposition
     public int waveNumber;
     public List<EnemySpawn> enemies;
     public bool isBossWave = false;
-    public float waveDuration = 60f; // How long the wave lasts
+    public float waveDuration = 60f;
 }
 
 [System.Serializable]
@@ -43,22 +38,37 @@ public class EnemySpawn
     public Vector3 spawnPosition;
 }
 
+[System.Serializable]
+public class SpecialWaveModifier
+{
+    public enum ModifierType { DoubleEnemies, TougherEnemies }
+
+    public ModifierType type;
+    public string displayName;
+    public float healthMultiplier = 1f;
+    public float damageMultiplier = 1f;
+    public float speedMultiplier = 1f;
+    public float lootBonusChance = 0f;
+    public int countMultiplier = 1;
+}
+#endregion
+
 public class WaveManager : MonoBehaviour
 {
-    // Store original stats temporarily for restoration
-    private readonly Dictionary<string, (int health, int damage, float speed, float lootDropChance)> originalStats
-    = new Dictionary<string, (int, int, float, float)>();
+    #region Constants
+    private const string ENEMY_TAG = "Enemy";
+    private const string PLAYER_TAG = "Player";
+    private const string DEFAULT_ENEMY_NAME = "Enemy";
+    private const string DEFAULT_LOOT_TABLE = "BasicEnemy";
+    private const string DEFAULT_BOSS_LOOT_TABLE = "BasicBoss";
+    private const int MAX_WAVE_REROLL_ATTEMPTS = 5;
+    private const int SAFETY_LOOP_LIMIT = 500;
+    private const float PRUNE_INTERVAL = 2f;
+    #endregion
 
-    [Header("Build Phases")]
-    public bool useBuildPhases = true;
-    [HideInInspector] public bool waitingForBuild = false;
-
+    #region Serialized Fields
+    [Header("References")]
     [SerializeField] private StrongholdHealth stronghold;
-    public int strongholdCurrentHealth => stronghold ? stronghold.CurrentHealth : 0;
-    public int strongholdMaxHealth => stronghold ? stronghold.MaxHealth : 0;
-
-    // Event for tutorial condition subscribed to wave completion event - Archie | [25/09/25].
-    public static event System.Action<int> OnWaveCompleted;
 
     [Header("Enemy Types")]
     public List<EnemyType> availableEnemyTypes = new List<EnemyType>();
@@ -81,7 +91,14 @@ public class WaveManager : MonoBehaviour
     public float spawnDelayMax = 2.5f;
     public float perEnemySpawnDelayMin = 0.1f;
     public float perEnemySpawnDelayMax = 0.35f;
-    public float spWaveChance = 0.15f;
+
+    [Header("Special Wave Settings")]
+    [SerializeField] private float specialWaveChance = 0.15f;
+    [SerializeField] private float doubleEnemyChance = 0.5f;
+    [SerializeField] private float toughEnemyHealthMultiplier = 2f;
+    [SerializeField] private float toughEnemyDamageMultiplier = 1.25f;
+    [SerializeField] private float toughEnemySpeedMultiplier = 1.25f;
+    [SerializeField] private float toughEnemyLootBonus = 0.25f;
 
     [Header("Targets")]
     [Tooltip("Stronghold or base the enemies march toward when not pursuing the player.")]
@@ -89,31 +106,52 @@ public class WaveManager : MonoBehaviour
     [Tooltip("Optional detection anchor (e.g. invisible child object) attached to the player.")]
     public Transform playerDetectionAnchor;
 
+    [Header("Build Phases")]
+    public bool useBuildPhases = true;
+
     [Header("State")]
     public int currentWave = 1;
     public bool isWaveActive = false;
     public int enemiesRemaining = 0;
-    public bool buildPhaseActive = false; // NEW
+    public bool buildPhaseActive = false;
 
     [Header("Debug")]
     [SerializeField] private bool autoStartOnAwake = false;
     [SerializeField] private bool logWaveCompositions = false;
+    #endregion
 
+    #region Private Fields
     private readonly List<GameObject> activeEnemies = new List<GameObject>();
     private readonly Dictionary<string, FactionEnemyEntry> entryLookup = new Dictionary<string, FactionEnemyEntry>();
+    private readonly Dictionary<string, (int health, int damage, float speed, float lootDropChance)> originalStats = new Dictionary<string, (int, int, float, float)>();
+    private readonly Dictionary<string, int> originalSpawnCounts = new Dictionary<string, int>();
+    private readonly HashSet<string> generatedWaveSignatures = new HashSet<string>();
+
     private Coroutine currentWaveCoroutine;
     private System.Random fallbackRandom = new System.Random();
-    private readonly HashSet<string> generatedWaveSignatures = new HashSet<string>();
     private string lastWaveSignature;
+    private float nextPruneTime = 0f;
+    private SpecialWaveModifier currentWaveModifier;
 
-    private const int MaxWaveRerollAttempts = 5;
+    // Cached references
+    private Transform cachedPlayerAnchor;
+    private bool hasSearchedForPlayer = false;
+    #endregion
 
-    // Events
+    #region Properties
+    public int StrongholdCurrentHealth => stronghold ? stronghold.CurrentHealth : 0;
+    public int StrongholdMaxHealth => stronghold ? stronghold.MaxHealth : 0;
+    #endregion
+
+    #region Events
+    public static event System.Action<int> OnWaveCompleted;
     public System.Action<int> OnWaveStart;
     public System.Action<int> OnWaveComplete;
     public System.Action OnAllWavesComplete;
-    public System.Action<int> OnBuildPhaseStarted; // NEW
+    public System.Action<int> OnBuildPhaseStarted;
+    #endregion
 
+    #region Unity Lifecycle
     void Awake()
     {
         InitializeEnemyTypes();
@@ -127,6 +165,32 @@ public class WaveManager : MonoBehaviour
         }
     }
 
+    void Update()
+    {
+        if (isWaveActive && Time.time >= nextPruneTime)
+        {
+            SafetyPruneDeadEnemies();
+            nextPruneTime = Time.time + PRUNE_INTERVAL;
+        }
+    }
+
+    void OnValidate()
+    {
+        // Ensure valid values
+        maxWaves = Mathf.Max(1, maxWaves);
+        baseWaveBudget = Mathf.Max(1, baseWaveBudget);
+        budgetPerWave = Mathf.Max(0, budgetPerWave);
+        timeBetweenWaves = Mathf.Max(0f, timeBetweenWaves);
+        spawnRadius = Mathf.Max(0f, spawnRadius);
+        specialWaveChance = Mathf.Clamp01(specialWaveChance);
+        doubleEnemyChance = Mathf.Clamp01(doubleEnemyChance);
+    }
+    #endregion
+
+    #region Initialization
+    /// <summary>
+    /// Initializes enemy types from the active faction or creates default enemies.
+    /// </summary>
     void InitializeEnemyTypes()
     {
         if (availableEnemyTypes == null)
@@ -148,88 +212,129 @@ public class WaveManager : MonoBehaviour
 
         if (availableEnemyTypes.Count == 0)
         {
-            RegisterEnemyEntry(new FactionEnemyEntry
-            {
-                displayName = "Basic Enemy",
-                health = 50,
-                speed = 3f,
-                damage = 10,
-                spawnWeight = 1f,
-                difficultyCost = 1,
-                lootTableName = "BasicEnemy",
-                lootDropChance = 0.25f
-            });
-
-            RegisterEnemyEntry(new FactionEnemyEntry
-            {
-                displayName = "Fast Enemy",
-                health = 30,
-                speed = 5f,
-                damage = 5,
-                spawnWeight = 0.7f,
-                difficultyCost = 1,
-                lootTableName = "FastEnemy",
-                lootDropChance = 0.35f
-            });
-
-            RegisterEnemyEntry(new FactionEnemyEntry
-            {
-                displayName = "Tank Enemy",
-                health = 100,
-                speed = 2f,
-                damage = 15,
-                spawnWeight = 0.5f,
-                difficultyCost = 2,
-                lootTableName = "TankEnemy",
-                lootDropChance = 0.4f
-            });
-
-            RegisterEnemyEntry(new FactionEnemyEntry
-            {
-                displayName = "Boss",
-                health = 200,
-                speed = 2.5f,
-                damage = 25,
-                spawnWeight = 0.1f,
-                isBoss = true,
-                difficultyCost = 10,
-                minWave = bossWaveInterval,
-                maxPerWave = 1,
-                lootTableName = "BasicBoss",
-                lootDropChance = 1f,
-                bossLootTableName = "BasicBoss"
-            });
+            CreateDefaultEnemies();
         }
     }
 
+    /// <summary>
+    /// Creates default enemy types when no faction is configured.
+    /// </summary>
+    void CreateDefaultEnemies()
+    {
+        RegisterEnemyEntry(new FactionEnemyEntry
+        {
+            displayName = "Basic Enemy",
+            health = 50,
+            speed = 3f,
+            damage = 10,
+            spawnWeight = 1f,
+            difficultyCost = 1,
+            lootTableName = DEFAULT_LOOT_TABLE,
+            lootDropChance = 0.25f
+        });
+
+        RegisterEnemyEntry(new FactionEnemyEntry
+        {
+            displayName = "Fast Enemy",
+            health = 30,
+            speed = 5f,
+            damage = 5,
+            spawnWeight = 0.7f,
+            difficultyCost = 1,
+            lootTableName = "FastEnemy",
+            lootDropChance = 0.35f
+        });
+
+        RegisterEnemyEntry(new FactionEnemyEntry
+        {
+            displayName = "Tank Enemy",
+            health = 100,
+            speed = 2f,
+            damage = 15,
+            spawnWeight = 0.5f,
+            difficultyCost = 2,
+            lootTableName = "TankEnemy",
+            lootDropChance = 0.4f
+        });
+
+        RegisterEnemyEntry(new FactionEnemyEntry
+        {
+            displayName = "Boss",
+            health = 200,
+            speed = 2.5f,
+            damage = 25,
+            spawnWeight = 0.1f,
+            isBoss = true,
+            difficultyCost = 10,
+            minWave = bossWaveInterval,
+            maxPerWave = 1,
+            lootTableName = DEFAULT_BOSS_LOOT_TABLE,
+            lootDropChance = 1f,
+            bossLootTableName = DEFAULT_BOSS_LOOT_TABLE
+        });
+    }
+
+    /// <summary>
+    /// Registers a faction enemy entry into the available enemy types.
+    /// </summary>
+    void RegisterEnemyEntry(FactionEnemyEntry entry)
+    {
+        if (entry == null) return;
+
+        EnemyType type = entry.ToEnemyType();
+        string key = ResolveEntryName(entry);
+
+        entryLookup[key] = entry;
+        availableEnemyTypes.Add(type);
+    }
+    #endregion
+
+    #region Wave Control
+    /// <summary>
+    /// Begins a new run starting from the specified wave.
+    /// </summary>
     public void BeginRun(int startingWave = 1)
     {
         InitializeEnemyTypes();
         ResetState();
         currentWave = Mathf.Max(1, startingWave);
-        if (stronghold) stronghold.ResetHealth();
+
+        if (stronghold)
+        {
+            stronghold.ResetHealth();
+        }
 
         StartNextWave();
     }
 
-    void RegisterEnemyEntry(FactionEnemyEntry entry)
+    /// <summary>
+    /// Starts the next wave in the sequence.
+    /// </summary>
+    public void StartNextWave()
     {
-        if (entry == null) return;
-        EnemyType type = entry.ToEnemyType();
-        string key = ResolveEntryName(entry);
+        Debug.Log($"[WaveManager] Starting wave {currentWave}");
 
-        if (!entryLookup.ContainsKey(key))
+        if (currentWave > maxWaves)
         {
-            entryLookup.Add(key, entry);
-        }
-        else
-        {
-            entryLookup[key] = entry;
+            OnAllWavesComplete?.Invoke();
+            return;
         }
 
-        availableEnemyTypes.Add(type);
+        buildPhaseActive = false;
+        currentWaveCoroutine = StartCoroutine(RunWave(currentWave));
     }
 
+    /// <summary>
+    /// Stops the current wave and resets all state.
+    /// </summary>
+    public void StopCurrentWave()
+    {
+        ResetState();
+    }
+
+    /// <summary>
+    /// Resets the wave manager state.
+    /// </summary>
     void ResetState()
     {
         if (currentWaveCoroutine != null)
@@ -249,134 +354,85 @@ public class WaveManager : MonoBehaviour
         activeEnemies.Clear();
         enemiesRemaining = 0;
         isWaveActive = false;
-        buildPhaseActive = false; // NEW
+        buildPhaseActive = false;
         generatedWaveSignatures.Clear();
         lastWaveSignature = null;
+        currentWaveModifier = null;
     }
+    #endregion
 
-    public void StartNextWave()
-    {
-        Debug.Log($"[WaveManager] StartNextWave() -> wave {currentWave}");
-        if (currentWave > maxWaves) { OnAllWavesComplete?.Invoke(); return; }
-        buildPhaseActive = false;
-        currentWaveCoroutine = StartCoroutine(RunWave(currentWave));
-    }
-
+    #region Wave Execution
+    /// <summary>
+    /// Executes a single wave from start to completion.
+    /// </summary>
     IEnumerator RunWave(int waveNumber)
     {
-        Debug.Log($"[WaveManager] RunWave({waveNumber}) starting");
+        Debug.Log($"[WaveManager] Running wave {waveNumber}");
         isWaveActive = true;
         OnWaveStart?.Invoke(waveNumber);
 
         System.Random waveRandom = GetWaveRandom(waveNumber);
 
-        // Generate randomized wave composition
+        // Generate wave composition
         WaveComposition waveComp = GenerateRandomWave(waveNumber, waveRandom);
-        // Special Wave logic — 15% chance for a special modifier
-        if (UnityEngine.Random.value < spWaveChance)
+
+        // Apply special wave modifier
+        currentWaveModifier = null;
+        if (UnityEngine.Random.value < specialWaveChance)
         {
-             ApplySpecialWaveModifier(waveComp, waveNumber);
+            currentWaveModifier = CreateSpecialWaveModifier(waveComp, waveNumber);
         }
 
         // Spawn enemies
         yield return StartCoroutine(SpawnWaveEnemies(waveComp, waveRandom));
 
-        
+        // Wait for all enemies to be defeated
         while (true)
         {
-            PruneDeadEnemies(); // keep the list clean
+            SafetyPruneDeadEnemies();
 
-            // exit when counter says zero OR when there are simply no tracked enemies left
             if (enemiesRemaining <= 0 || activeEnemies.Count == 0)
+            {
                 break;
+            }
 
             yield return null;
         }
 
-
         // Wave complete
+        CleanupWave(waveComp);
         isWaveActive = false;
         OnWaveComplete?.Invoke(waveNumber);
-        OnWaveCompleted?.Invoke(waveNumber); // Tutorial event - Archie | [25/09/25]
+        OnWaveCompleted?.Invoke(waveNumber);
 
-        // Track wave completion in meta progression
+        // Track wave completion
         if (MetaProgression.Instance != null)
         {
             MetaProgression.Instance.CompleteWave(waveNumber);
         }
 
-        // === ENTER BUILD PHASE INSTEAD OF AUTO-STARTING NEXT WAVE ===
         StartBuildPhase();
-        yield break;
-    }
-
-    
-    void PruneDeadEnemies()
-    {
-        for (int i = activeEnemies.Count - 1; i >= 0; i--)
-        {
-            if (activeEnemies[i] == null)
-            {
-                activeEnemies.RemoveAt(i);
-                // if something killed an enemy without calling OnDeath, make sure we don't get stuck
-                if (enemiesRemaining > 0) enemiesRemaining--;
-            }
-        }
-    }
-
-
-    // ---------- BUILD PHASE CONTROL (NEW) ----------
-    public void StartBuildPhase()
-    {
-        buildPhaseActive = true;
-        isWaveActive = false;
-
-        // fire the event (keeps things decoupled if you use it)
-        OnBuildPhaseStarted?.Invoke(currentWave);
-
-        // ✅ hard-call the controller so the panel always shows
-        var bpc = FindObjectOfType<BuildPhaseController>();
-        if (bpc != null)
-        {
-            bpc.ShowBuildPanel();
-        }
-
-        Debug.Log($"[WaveManager] Build Phase started after wave {currentWave}.");
     }
 
     /// <summary>
-    /// Call this from your UI "Finish" button to end the build phase and start the next wave.
+    /// Cleans up wave-specific data and modifiers.
     /// </summary>
-    public void FinishBuildPhase()
-    {
-        // Log for sanity
-        Debug.Log($"[WaveManager] FinishBuildPhase() pressed. buildPhaseActive={buildPhaseActive}, currentWave={currentWave}");
-
-        // Don’t gate behind buildPhaseActive – just proceed
-        buildPhaseActive = false;
-
-        if (timeBetweenWaves > 0f)
-        {
-            StartCoroutine(StartNextWaveAfterDelay(timeBetweenWaves));
-        }
-        else
-        {
-            currentWave++;
-            StartNextWave();
-        }
-    }
-
-    private IEnumerator StartNextWaveAfterDelay(float delay)
-    {
-        yield return new WaitForSeconds(delay);
-        currentWave++;
-        StartNextWave();
-    }
-    // ------------------------------------------------
-
-    WaveComposition GenerateRandomWave(int waveNumber, System.Random rng, int rerollDepth = 0)
+    void CleanupWave(WaveComposition wave)
     {
         RestoreOriginalEnemyStats();
+        originalSpawnCounts.Clear();
+        currentWaveModifier = null;
+
+        Debug.Log($"[WaveManager] Wave {wave.waveNumber} cleanup complete.");
+    }
+    #endregion
+
+    #region Wave Generation
+    /// <summary>
+    /// Generates a randomized wave composition based on budget and available enemies.
+    /// </summary>
+    WaveComposition GenerateRandomWave(int waveNumber, System.Random rng, int rerollDepth = 0)
+    {
         WaveComposition wave = new WaveComposition
         {
             waveNumber = waveNumber,
@@ -386,7 +442,7 @@ public class WaveManager : MonoBehaviour
         List<FactionEnemyEntry> eligibleEntries = GatherEligibleEntries(waveNumber);
         if (eligibleEntries.Count == 0)
         {
-            Debug.LogWarning("WaveManager: No eligible enemies found for wave " + waveNumber);
+            Debug.LogWarning($"WaveManager: No eligible enemies found for wave {waveNumber}");
             return wave;
         }
 
@@ -397,6 +453,7 @@ public class WaveManager : MonoBehaviour
         int targetBudget = CalculateWaveBudget(waveNumber, rng, isBossWave);
         int usedBudget = 0;
 
+        // Spawn boss first if boss wave
         if (isBossWave)
         {
             var bossEntry = PickEnemyEntry(eligibleEntries, rng, counts, int.MaxValue, true);
@@ -407,12 +464,14 @@ public class WaveManager : MonoBehaviour
             }
         }
 
+        // Fill remaining budget with regular enemies
         int safety = 0;
-        while (usedBudget < targetBudget && safety < 500)
+        while (usedBudget < targetBudget && safety < SAFETY_LOOP_LIMIT)
         {
             safety++;
             int remainingBudget = Math.Max(1, targetBudget - usedBudget);
             var entry = PickEnemyEntry(eligibleEntries, rng, counts, remainingBudget, false);
+
             if (entry == null)
             {
                 break;
@@ -435,8 +494,9 @@ public class WaveManager : MonoBehaviour
             LogWaveComposition(waveNumber, wave, targetBudget, usedBudget);
         }
 
+        // Check for duplicate waves and reroll if needed
         string signature = BuildWaveSignature(wave);
-        if (IsDuplicateSignature(signature) && rerollDepth < MaxWaveRerollAttempts)
+        if (IsDuplicateSignature(signature) && rerollDepth < MAX_WAVE_REROLL_ATTEMPTS)
         {
             if (logWaveCompositions)
             {
@@ -451,28 +511,9 @@ public class WaveManager : MonoBehaviour
         return wave;
     }
 
-    List<EnemySpawn> BuildEnemySpawns(Dictionary<FactionEnemyEntry, int> counts, System.Random rng)
-    {
-        List<EnemySpawn> spawns = new List<EnemySpawn>();
-
-        foreach (var pair in counts)
-        {
-            EnemyType type = GetEnemyTypeForEntry(pair.Key);
-            if (type == null) continue;
-
-            spawns.Add(new EnemySpawn
-            {
-                enemyTypeName = type.name,
-                count = pair.Value,
-                spawnDelay = Mathf.Lerp(spawnDelayMin, spawnDelayMax, (float)rng.NextDouble()),
-                spawnPosition = Vector3.zero
-            });
-        }
-
-        Shuffle(spawns, rng);
-        return spawns;
-    }
-
+    /// <summary>
+    /// Calculates the budget for a wave based on wave number and variance.
+    /// </summary>
     int CalculateWaveBudget(int waveNumber, System.Random rng, bool isBossWave)
     {
         int baseBudgetValue = Mathf.Max(1, baseWaveBudget + (waveNumber - 1) * budgetPerWave);
@@ -489,18 +530,28 @@ public class WaveManager : MonoBehaviour
         return budget;
     }
 
-    void RegisterSpawn(FactionEnemyEntry entry, Dictionary<FactionEnemyEntry, int> counts)
+    /// <summary>
+    /// Gathers all enemies eligible for spawning in the given wave.
+    /// </summary>
+    List<FactionEnemyEntry> GatherEligibleEntries(int waveNumber)
     {
-        if (counts.TryGetValue(entry, out int current))
+        List<FactionEnemyEntry> entries = new List<FactionEnemyEntry>();
+
+        foreach (var pair in entryLookup)
         {
-            counts[entry] = current + 1;
+            FactionEnemyEntry entry = pair.Value;
+            if (entry != null && entry.IsAvailableForWave(waveNumber))
+            {
+                entries.Add(entry);
+            }
         }
-        else
-        {
-            counts[entry] = 1;
-        }
+
+        return entries;
     }
 
+    /// <summary>
+    /// Picks a random enemy from the eligible list based on spawn weights.
+    /// </summary>
     FactionEnemyEntry PickEnemyEntry(List<FactionEnemyEntry> entries, System.Random rng, Dictionary<FactionEnemyEntry, int> counts, int remainingBudget, bool bossOnly)
     {
         List<FactionEnemyEntry> candidates = new List<FactionEnemyEntry>();
@@ -546,23 +597,51 @@ public class WaveManager : MonoBehaviour
         return candidates[candidates.Count - 1];
     }
 
-    List<FactionEnemyEntry> GatherEligibleEntries(int waveNumber)
+    /// <summary>
+    /// Builds the list of enemy spawns from the count dictionary.
+    /// </summary>
+    List<EnemySpawn> BuildEnemySpawns(Dictionary<FactionEnemyEntry, int> counts, System.Random rng)
     {
-        List<FactionEnemyEntry> entries = new List<FactionEnemyEntry>();
+        List<EnemySpawn> spawns = new List<EnemySpawn>();
 
-        foreach (var pair in entryLookup)
+        foreach (var pair in counts)
         {
-            FactionEnemyEntry entry = pair.Value;
-            if (entry == null) continue;
-            if (entry.IsAvailableForWave(waveNumber))
+            EnemyType type = GetEnemyTypeForEntry(pair.Key);
+            if (type == null) continue;
+
+            spawns.Add(new EnemySpawn
             {
-                entries.Add(entry);
-            }
+                enemyTypeName = type.name,
+                count = pair.Value,
+                spawnDelay = Mathf.Lerp(spawnDelayMin, spawnDelayMax, (float)rng.NextDouble()),
+                spawnPosition = Vector3.zero
+            });
         }
 
-        return entries;
+        Shuffle(spawns, rng);
+        return spawns;
     }
 
+    /// <summary>
+    /// Registers a spawn in the count dictionary.
+    /// </summary>
+    void RegisterSpawn(FactionEnemyEntry entry, Dictionary<FactionEnemyEntry, int> counts)
+    {
+        if (counts.TryGetValue(entry, out int current))
+        {
+            counts[entry] = current + 1;
+        }
+        else
+        {
+            counts[entry] = 1;
+        }
+    }
+    #endregion
+
+    #region Enemy Spawning
+    /// <summary>
+    /// Spawns all enemies in the wave composition with delays.
+    /// </summary>
     IEnumerator SpawnWaveEnemies(WaveComposition wave, System.Random rng)
     {
         enemiesRemaining = wave.enemies.Sum(e => e.count);
@@ -578,6 +657,7 @@ public class WaveManager : MonoBehaviour
             for (int i = 0; i < spawn.count; i++)
             {
                 SpawnEnemy(spawn.enemyTypeName, rng);
+
                 float perSpawnDelay = Mathf.Lerp(perEnemySpawnDelayMin, perEnemySpawnDelayMax, (float)rng.NextDouble());
                 if (perSpawnDelay > 0f)
                 {
@@ -587,12 +667,27 @@ public class WaveManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Spawns a single enemy at a random spawn point.
+    /// </summary>
     void SpawnEnemy(string enemyTypeName, System.Random rng)
     {
+        if (string.IsNullOrEmpty(enemyTypeName))
+        {
+            Debug.LogError("WaveManager: Cannot spawn enemy with null/empty type name");
+            return;
+        }
+
+        if (rng == null)
+        {
+            Debug.LogError("WaveManager: RNG cannot be null for spawning");
+            return;
+        }
+
         EnemyType enemyType = availableEnemyTypes.Find(e => e.name == enemyTypeName);
         if (enemyType == null)
         {
-            Debug.LogWarning("WaveManager: Enemy type not found for name " + enemyTypeName);
+            Debug.LogWarning($"WaveManager: Enemy type not found for name {enemyTypeName}");
             return;
         }
 
@@ -610,7 +705,7 @@ public class WaveManager : MonoBehaviour
         }
 
         enemy.name = enemyType.name;
-        enemy.tag = "Enemy";
+        enemy.tag = ENEMY_TAG;
 
         EnemyBehavior behavior = enemy.GetComponent<EnemyBehavior>();
         if (behavior == null)
@@ -619,6 +714,13 @@ public class WaveManager : MonoBehaviour
         }
 
         behavior.Initialize(enemyType);
+
+        // Apply special wave modifiers if active
+        if (currentWaveModifier != null)
+        {
+            ApplyModifierToEnemy(behavior, currentWaveModifier);
+        }
+
         behavior.ConfigureTargets(strongholdTarget, ResolvePlayerAnchor());
         behavior.OnDeath -= OnEnemyDeath;
         behavior.OnDeath += OnEnemyDeath;
@@ -626,6 +728,9 @@ public class WaveManager : MonoBehaviour
         activeEnemies.Add(enemy);
     }
 
+    /// <summary>
+    /// Gets a random spawn position from configured spawn points.
+    /// </summary>
     Vector3 GetRandomSpawnPosition(System.Random rng)
     {
         if (spawnPoints != null && spawnPoints.Length > 0)
@@ -640,6 +745,9 @@ public class WaveManager : MonoBehaviour
         return RandomPointInCircle(rng, spawnRadius);
     }
 
+    /// <summary>
+    /// Generates a random point within a circle.
+    /// </summary>
     Vector3 RandomPointInCircle(System.Random rng, float radius)
     {
         if (radius <= 0f)
@@ -651,103 +759,110 @@ public class WaveManager : MonoBehaviour
         double distance = Math.Sqrt(rng.NextDouble()) * radius;
         return new Vector3((float)(Math.Cos(angle) * distance), 0f, (float)(Math.Sin(angle) * distance));
     }
+    #endregion
 
-    Transform ResolvePlayerAnchor()
-    {
-        if (playerDetectionAnchor != null)
-        {
-            return playerDetectionAnchor;
-        }
-
-        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-        return playerObj != null ? playerObj.transform : null;
-    }
-
-    EnemyType GetEnemyTypeForEntry(FactionEnemyEntry entry)
-    {
-        string key = ResolveEntryName(entry);
-        EnemyType enemyType = availableEnemyTypes.Find(e => e.name == key);
-
-        if (enemyType == null)
-        {
-            enemyType = entry.ToEnemyType();
-            availableEnemyTypes.Add(enemyType);
-        }
-
-        return enemyType;
-    }
-
-    string BuildWaveSignature(WaveComposition wave)
+    #region Special Wave Modifiers
+    /// <summary>
+    /// Creates and applies a special wave modifier.
+    /// </summary>
+    SpecialWaveModifier CreateSpecialWaveModifier(WaveComposition wave, int waveNumber)
     {
         if (wave == null || wave.enemies == null || wave.enemies.Count == 0)
         {
-            return string.Empty;
+            return null;
         }
 
-        var parts = wave.enemies
-            .OrderBy(e => e.enemyTypeName)
-            .Select(e => $"{e.enemyTypeName}:{e.count}");
+        bool isDoubleWave = UnityEngine.Random.value < doubleEnemyChance;
 
-        return string.Join("|", parts);
-    }
+        SpecialWaveModifier modifier = new SpecialWaveModifier();
 
-    bool IsDuplicateSignature(string signature)
-    {
-        if (string.IsNullOrEmpty(signature))
+        if (isDoubleWave)
         {
-            return false;
-        }
+            modifier.type = SpecialWaveModifier.ModifierType.DoubleEnemies;
+            modifier.displayName = "DOUBLE TROUBLE";
+            modifier.countMultiplier = 2;
 
-        if (signature == lastWaveSignature)
+            // Double enemy counts for spawn
+            foreach (var spawn in wave.enemies)
+            {
+                string key = $"{spawn.enemyTypeName}_{waveNumber}";
+                if (!originalSpawnCounts.ContainsKey(key))
+                {
+                    originalSpawnCounts[key] = spawn.count;
+                }
+                spawn.count *= 2;
+            }
+        }
+        else
         {
-            return true;
+            modifier.type = SpecialWaveModifier.ModifierType.TougherEnemies;
+            modifier.displayName = "TOUGHER ENEMIES";
+            modifier.healthMultiplier = toughEnemyHealthMultiplier;
+            modifier.damageMultiplier = toughEnemyDamageMultiplier;
+            modifier.speedMultiplier = toughEnemySpeedMultiplier;
+            modifier.lootBonusChance = toughEnemyLootBonus;
         }
 
-        return generatedWaveSignatures.Contains(signature);
+        Debug.Log($"✨ [Special Wave] Wave {waveNumber} is {modifier.displayName}!");
+        return modifier;
     }
 
-    string ResolveEntryName(FactionEnemyEntry entry)
+    /// <summary>
+    /// Applies special wave modifier to an individual enemy.
+    /// </summary>
+    void ApplyModifierToEnemy(EnemyBehavior behavior, SpecialWaveModifier modifier)
     {
-        if (entry == null) return "Enemy";
-        if (!string.IsNullOrEmpty(entry.displayName)) return entry.displayName;
-        if (entry.prefab != null) return entry.prefab.name;
-        return "Enemy";
-    }
+        if (behavior == null || modifier == null) return;
 
-    void Shuffle<T>(IList<T> list, System.Random rng)
-    {
-        for (int i = list.Count - 1; i > 0; i--)
+        if (modifier.type == SpecialWaveModifier.ModifierType.TougherEnemies)
         {
-            int swapIndex = rng.Next(i + 1);
-            T temp = list[i];
-            list[i] = list[swapIndex];
-            list[swapIndex] = temp;
+            behavior.ApplyWaveModifiers(
+                modifier.healthMultiplier,
+                modifier.damageMultiplier,
+                modifier.speedMultiplier,
+                modifier.lootBonusChance
+            );
         }
     }
 
-    System.Random GetWaveRandom(int waveNumber)
+    /// <summary>
+    /// Restores original enemy stats after special waves.
+    /// </summary>
+    void RestoreOriginalEnemyStats()
     {
-        if (RunState.Instance != null)
+        if (originalStats.Count == 0) return;
+
+        foreach (var kvp in originalStats)
         {
-            return RunState.Instance.CreateWaveRandom(waveNumber);
+            string enemyName = kvp.Key;
+            var (health, damage, speed, lootDropChance) = kvp.Value;
+
+            EnemyType enemyType = availableEnemyTypes.Find(e => e.name == enemyName);
+            if (enemyType == null) continue;
+
+            enemyType.health = health;
+            enemyType.damage = damage;
+            enemyType.speed = speed;
+            enemyType.lootDropChance = lootDropChance;
         }
 
-        return new System.Random(fallbackRandom.Next());
+        originalStats.Clear();
     }
+    #endregion
 
-    void LogWaveComposition(int waveNumber, WaveComposition wave, int targetBudget, int usedBudget)
-    {
-        string composition = string.Join(", ", wave.enemies.Select(e => $"{e.enemyTypeName} x{e.count}"));
-        int seed = RunState.Instance != null ? RunState.Instance.RunSeed : 0;
-        Debug.Log($"Wave {waveNumber} (seed {seed}) targetBudget={targetBudget}, usedBudget={usedBudget}: {composition}");
-    }
-
+    #region Enemy Callbacks
+    /// <summary>
+    /// Called when an enemy dies.
+    /// </summary>
     void OnEnemyDeath(GameObject enemy)
     {
-        activeEnemies.Remove(enemy);
-        enemiesRemaining--;
+        if (enemy == null) return;
 
-        // Check if this was a boss
+        if (activeEnemies.Remove(enemy))
+        {
+            enemiesRemaining = Mathf.Max(0, enemiesRemaining - 1);
+        }
+
         EnemyBehavior behavior = enemy.GetComponent<EnemyBehavior>();
         if (behavior != null)
         {
@@ -762,25 +877,58 @@ public class WaveManager : MonoBehaviour
         }
     }
 
-    void DropBossLoot(Vector3 position, string lootTableName)
+    /// <summary>
+    /// Safety check to remove null enemies from tracking.
+    /// </summary>
+    void SafetyPruneDeadEnemies()
     {
-        // Use the loot system to drop boss loot
-        if (LootSystem.Instance != null)
+        int removedCount = 0;
+
+        for (int i = activeEnemies.Count - 1; i >= 0; i--)
         {
-            string table = string.IsNullOrEmpty(lootTableName) ? "BasicBoss" : lootTableName;
-            LootSystem.Instance.DropBossLoot(position, table);
+            if (activeEnemies[i] == null)
+            {
+                activeEnemies.RemoveAt(i);
+                removedCount++;
+
+                if (enemiesRemaining > 0)
+                {
+                    enemiesRemaining--;
+                }
+            }
         }
-        else
+
+        if (removedCount > 0 && logWaveCompositions)
         {
-            Debug.LogWarning("LootSystem not found! Boss loot cannot be dropped.");
+            Debug.Log($"[WaveManager] Pruned {removedCount} null enemies from tracking");
         }
     }
+    #endregion
 
+    #region Loot System
+    /// <summary>
+    /// Drops boss loot at the specified position.
+    /// </summary>
+    void DropBossLoot(Vector3 position, string lootTableName)
+    {
+        if (LootSystem.Instance == null)
+        {
+            Debug.LogWarning("WaveManager: LootSystem not found! Boss loot cannot be dropped.");
+            return;
+        }
+
+        string table = string.IsNullOrEmpty(lootTableName) ? DEFAULT_BOSS_LOOT_TABLE : lootTableName;
+        LootSystem.Instance.DropBossLoot(position, table);
+    }
+
+    /// <summary>
+    /// Attempts to drop loot from a regular enemy based on drop chance.
+    /// </summary>
     void TryDropEnemyLoot(Vector3 position, EnemyBehavior behavior)
     {
         if (LootSystem.Instance == null)
         {
-            Debug.LogWarning("LootSystem not found! Regular enemy loot cannot be dropped.");
+            Debug.LogWarning("WaveManager: LootSystem not found! Regular enemy loot cannot be dropped.");
             return;
         }
 
@@ -800,19 +948,103 @@ public class WaveManager : MonoBehaviour
             LootSystem.Instance.DropLoot(position, behavior.LootTableName);
         }
     }
+    #endregion
 
-    public void StopCurrentWave()
+    #region Build Phase
+    /// <summary>
+    /// Starts the build phase after a wave is complete.
+    /// </summary>
+    public void StartBuildPhase()
     {
-        ResetState();
+        if (!useBuildPhases)
+        {
+            // Skip build phase and go directly to next wave
+            if (timeBetweenWaves > 0f)
+            {
+                StartCoroutine(StartNextWaveAfterDelay(timeBetweenWaves));
+            }
+            else
+            {
+                currentWave++;
+                StartNextWave();
+            }
+            return;
+        }
+
+        buildPhaseActive = true;
+        isWaveActive = false;
+
+        OnBuildPhaseStarted?.Invoke(currentWave);
+
+        // Show build panel
+        var bpc = FindObjectOfType<BuildPhaseController>();
+        if (bpc != null)
+        {
+            bpc.ShowBuildPanel();
+        }
+        else
+        {
+            Debug.LogWarning("[WaveManager] BuildPhaseController not found! Cannot show build panel.");
+        }
+
+        Debug.Log($"[WaveManager] Build Phase started after wave {currentWave}.");
     }
 
+    /// <summary>
+    /// Finishes the build phase and starts the next wave.
+    /// </summary>
+    public void FinishBuildPhase()
+    {
+        if (currentWave >= maxWaves)
+        {
+            Debug.LogWarning("WaveManager: Cannot start next wave - max waves reached");
+            OnAllWavesComplete?.Invoke();
+            return;
+        }
+
+        if (isWaveActive)
+        {
+            Debug.LogWarning("WaveManager: Cannot finish build phase - wave is still active");
+            return;
+        }
+
+        Debug.Log($"[WaveManager] Build Phase finished. Preparing wave {currentWave + 1}");
+
+        buildPhaseActive = false;
+
+        if (timeBetweenWaves > 0f)
+        {
+            StartCoroutine(StartNextWaveAfterDelay(timeBetweenWaves));
+        }
+        else
+        {
+            currentWave++;
+            StartNextWave();
+        }
+    }
+
+    /// <summary>
+    /// Waits for a delay before starting the next wave.
+    /// </summary>
+    IEnumerator StartNextWaveAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        currentWave++;
+        StartNextWave();
+    }
+    #endregion
+
+    #region Stronghold
+    /// <summary>
+    /// Damages the stronghold by the specified amount.
+    /// </summary>
     public void DamageStronghold(int amount)
     {
         if (amount <= 0) return;
 
         if (!stronghold)
         {
-            Debug.LogWarning("DamageStronghold called but no StrongholdHealth is assigned.");
+            Debug.LogWarning("WaveManager: DamageStronghold called but no StrongholdHealth is assigned.");
             return;
         }
 
@@ -820,84 +1052,143 @@ public class WaveManager : MonoBehaviour
 
         if (stronghold.CurrentHealth <= 0)
         {
-            // stop waves and end the game
             StopCurrentWave();
-            if (GameManager.Instance) GameManager.Instance.GameOver();
+
+            if (GameManager.Instance)
+            {
+                GameManager.Instance.GameOver();
+            }
+        }
+    }
+    #endregion
+
+    #region Utility Methods
+    /// <summary>
+    /// Resolves the player anchor transform for enemy targeting.
+    /// </summary>
+    Transform ResolvePlayerAnchor()
+    {
+        if (playerDetectionAnchor != null)
+        {
+            return playerDetectionAnchor;
+        }
+
+        if (cachedPlayerAnchor != null)
+        {
+            return cachedPlayerAnchor;
+        }
+
+        if (!hasSearchedForPlayer)
+        {
+            GameObject playerObj = GameObject.FindGameObjectWithTag(PLAYER_TAG);
+            if (playerObj != null)
+            {
+                cachedPlayerAnchor = playerObj.transform;
+            }
+            hasSearchedForPlayer = true;
+        }
+
+        return cachedPlayerAnchor;
+    }
+
+    /// <summary>
+    /// Gets the enemy type for a faction entry.
+    /// </summary>
+    EnemyType GetEnemyTypeForEntry(FactionEnemyEntry entry)
+    {
+        string key = ResolveEntryName(entry);
+        EnemyType enemyType = availableEnemyTypes.Find(e => e.name == key);
+
+        if (enemyType == null)
+        {
+            enemyType = entry.ToEnemyType();
+            availableEnemyTypes.Add(enemyType);
+        }
+
+        return enemyType;
+    }
+
+    /// <summary>
+    /// Resolves the display name for a faction enemy entry.
+    /// </summary>
+    string ResolveEntryName(FactionEnemyEntry entry)
+    {
+        if (entry == null) return DEFAULT_ENEMY_NAME;
+        if (!string.IsNullOrEmpty(entry.displayName)) return entry.displayName;
+        if (entry.prefab != null) return entry.prefab.name;
+        return DEFAULT_ENEMY_NAME;
+    }
+
+    /// <summary>
+    /// Builds a unique signature for a wave composition.
+    /// </summary>
+    string BuildWaveSignature(WaveComposition wave)
+    {
+        if (wave == null || wave.enemies == null || wave.enemies.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var parts = wave.enemies
+            .OrderBy(e => e.enemyTypeName)
+            .Select(e => $"{e.enemyTypeName}:{e.count}");
+
+        return string.Join("|", parts);
+    }
+
+    /// <summary>
+    /// Checks if a wave signature is a duplicate.
+    /// </summary>
+    bool IsDuplicateSignature(string signature)
+    {
+        if (string.IsNullOrEmpty(signature))
+        {
+            return false;
+        }
+
+        if (signature == lastWaveSignature)
+        {
+            return true;
+        }
+
+        return generatedWaveSignatures.Contains(signature);
+    }
+
+    /// <summary>
+    /// Shuffles a list using the Fisher-Yates algorithm.
+    /// </summary>
+    void Shuffle<T>(IList<T> list, System.Random rng)
+    {
+        for (int i = list.Count - 1; i > 0; i--)
+        {
+            int swapIndex = rng.Next(i + 1);
+            T temp = list[i];
+            list[i] = list[swapIndex];
+            list[swapIndex] = temp;
         }
     }
 
-  // ------------------------------------------------------
-  // SPECIAL WAVE LOGIC
-  // ------------------------------------------------------
-  private void ApplySpecialWaveModifier(WaveComposition wave, int waveNumber)
-  {
-      if (wave == null || wave.enemies == null || wave.enemies.Count == 0)
-          return;
-
-      // Decide which special type this wave will be
-      bool isDoubleWave = UnityEngine.Random.value < 0.5f; // 50% chance for either
-      string modifierName = isDoubleWave ? "DOUBLE TROUBLE" : "TOUGHER ENEMIES";
-
-      Debug.Log($" [Special Wave] Wave {waveNumber} is {modifierName}!");
-
-      if (isDoubleWave)
-      {
-          // Double all enemy counts
-          foreach (var spawn in wave.enemies)
-          {
-              spawn.count *= 2;
-          }
-      }
-      else
-      {
-          // Tougher enemies: more health/damage/speed, better loot
-          foreach (var spawn in wave.enemies)
-          {
-              EnemyType enemyType = availableEnemyTypes.Find(e => e.name == spawn.enemyTypeName);
-              if (enemyType == null) continue;
-
-              // Store original stats if not already stored
-            if (!originalStats.ContainsKey(enemyType.name))
-            {
-                originalStats[enemyType.name] = (
-                    enemyType.health,
-                    enemyType.damage,
-                    enemyType.speed,
-                    enemyType.lootDropChance
-                );
-            }
-
-            // Apply temporary buffs
-            enemyType.health = Mathf.RoundToInt(enemyType.health * 2f);
-            enemyType.damage = Mathf.RoundToInt(enemyType.damage * 1.25f);
-            enemyType.speed *= 1.25f;
-            enemyType.lootDropChance = Mathf.Min(1f, enemyType.lootDropChance + 0.25f);
-          }
-      }
-  }
-
-  private void RestoreOriginalEnemyStats()
-{
-    if (originalStats.Count == 0)
-        return;
-
-    foreach (var kvp in originalStats)
+    /// <summary>
+    /// Gets a seeded random number generator for the wave.
+    /// </summary>
+    System.Random GetWaveRandom(int waveNumber)
     {
-        string enemyName = kvp.Key;
-        var (health, damage, speed, lootDropChance) = kvp.Value;
+        if (RunState.Instance != null)
+        {
+            return RunState.Instance.CreateWaveRandom(waveNumber);
+        }
 
-        EnemyType enemyType = availableEnemyTypes.Find(e => e.name == enemyName);
-        if (enemyType == null) continue;
-
-        enemyType.health = health;
-        enemyType.damage = damage;
-        enemyType.speed = speed;
-        enemyType.lootDropChance = lootDropChance;
+        return new System.Random(fallbackRandom.Next());
     }
 
-    originalStats.Clear();
-    Debug.Log("[Special Wave] Enemy stats restored to normal.");
-}
-
-
+    /// <summary>
+    /// Logs the composition of a generated wave.
+    /// </summary>
+    void LogWaveComposition(int waveNumber, WaveComposition wave, int targetBudget, int usedBudget)
+    {
+        string composition = string.Join(", ", wave.enemies.Select(e => $"{e.enemyTypeName} x{e.count}"));
+        int seed = RunState.Instance != null ? RunState.Instance.RunSeed : 0;
+        Debug.Log($"[WaveManager] Wave {waveNumber} (seed {seed}) targetBudget={targetBudget}, usedBudget={usedBudget}: {composition}");
+    }
+    #endregion
 }
