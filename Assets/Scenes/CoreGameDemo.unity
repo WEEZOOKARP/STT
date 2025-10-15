@@ -3501,7 +3501,7 @@ MonoBehaviour:
   spawnDelayMax: 2.5
   perEnemySpawnDelayMin: 0.1
   perEnemySpawnDelayMax: 0.35
-  specialWaveChance: 0.15
+  specialWaveChance: 0.2
   doubleEnemyChance: 0.5
   toughEnemyHealthMultiplier: 2
   toughEnemyDamageMultiplier: 1.25
@@ -7264,7 +7264,7 @@ MonoBehaviour:
   showScale: 1
   hideScaleY: 0
   warningSoundSource: {fileID: 1809048779}
-  warningSound: {fileID: 8300000, guid: 16adfd4f67ef848f992db7dc430069d1, type: 3}
+  warningSound: {fileID: 8300000, guid: 9fd2b16704c8c4b99b0488b1c4507cf9, type: 3}
 --- !u!82 &1809048779
 AudioSource:
   m_ObjectHideFlags: 0
@@ -7277,10 +7277,10 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
-  m_PlayOnAwake: 1
+  m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
-  Loop: 0
+  Loop: 1
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0

@@ -58,9 +58,11 @@ public class warningCuscene : MonoBehaviour
         canvasGroup.alpha = 1;
 
         // Play warning sound
-        if (warningSoundSource && warningSound)
+        if (warningSoundSource)
         {
-          warningSoundSource.PlayOneShot(warningSound);
+           warningSoundSource.clip = warningSound;
+           warningSoundSource.loop = true;   // Enable looping
+           warningSoundSource.Play();        // Start looping
         }
 
         CancelInvoke(nameof(StartHideAnimation));
@@ -76,6 +78,11 @@ public class warningCuscene : MonoBehaviour
     private System.Collections.IEnumerator HideAnimation()
     {
         isHiding = true;
+
+        // Stop warning sound
+        if (warningSoundSource && warningSoundSource.isPlaying)
+        warningSoundSource.Stop();
+
         float t = 0f;
         Vector3 startScale = warningCusceneUI.transform.localScale;
         Vector3 endScale = new Vector3(startScale.x, hideScaleY, startScale.z);
