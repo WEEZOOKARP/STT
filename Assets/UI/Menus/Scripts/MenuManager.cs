@@ -32,12 +32,12 @@ public class MenuManager : MonoBehaviour
     public MenuState currentMenuState = MenuState.Closed;
 
     [Header("Menu References")]
-    public GameObject pauseMenuCanvas;
-    public GameObject tutorialOverlayCanvas;
+    public GameObject pauseMenuCanvas = false;
+    public GameObject tutorialOverlayCanvas = false;
 
     public enum MenuState
     {
-        Closed,
+        Closed, // TODO: Do we need closed here? Do we not just figure this in persistentManager?
         PauseMenu,
         TutorialOverlay,
         Settings,
@@ -98,7 +98,6 @@ public class MenuManager : MonoBehaviour
             Debug.Log("T key pressed - calling CloseMenu()");
             CloseMenu();
         }
-
     }
 
     // Opens the pause menu and pauses the game.
