@@ -301,7 +301,7 @@ public class EnemyBehavior : MonoBehaviour
         return null;
     }
 
-    // -------- Stronghold damage passthrough (keeps your single source of truth) --------
+    //Stronghold damage passthrough (keeps your single source of truth)
     public void DamageStronghold(int amount)
     {
         // This assumes you already have the forwarder that calls stronghold.TakeDamage(...)
@@ -311,7 +311,7 @@ public class EnemyBehavior : MonoBehaviour
         if (sh) sh.TakeDamage(amount);
     }
 
-    // ----------------- Gizmos -----------------
+    // Gizmos
     void OnDrawGizmosSelected()
     {
         Gizmos.color = new Color(1f, 0.9f, 0f, 0.75f);
@@ -351,10 +351,8 @@ public class EnemyBehavior : MonoBehaviour
         damageTakenMultiplier = 1f;
     }
 
-    /// <summary>
     /// Applies special wave modifiers to this enemy instance.
     /// Called by WaveManager when spawning enemies during special waves.
-    /// </summary>
     public void ApplyWaveModifiers(float healthMult, float damageMult, float speedMult, float lootBonus)
     {
         // Apply health multiplier

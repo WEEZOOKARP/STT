@@ -188,9 +188,7 @@ public class WaveManager : MonoBehaviour
     #endregion
 
     #region Initialization
-    /// <summary>
     /// Initializes enemy types from the active faction or creates default enemies.
-    /// </summary>
     void InitializeEnemyTypes()
     {
         if (availableEnemyTypes == null)
@@ -216,9 +214,7 @@ public class WaveManager : MonoBehaviour
         }
     }
 
-    /// <summary>
     /// Creates default enemy types when no faction is configured.
-    /// </summary>
     void CreateDefaultEnemies()
     {
         RegisterEnemyEntry(new FactionEnemyEntry
@@ -274,9 +270,7 @@ public class WaveManager : MonoBehaviour
         });
     }
 
-    /// <summary>
     /// Registers a faction enemy entry into the available enemy types.
-    /// </summary>
     void RegisterEnemyEntry(FactionEnemyEntry entry)
     {
         if (entry == null) return;
@@ -290,9 +284,7 @@ public class WaveManager : MonoBehaviour
     #endregion
 
     #region Wave Control
-    /// <summary>
     /// Begins a new run starting from the specified wave.
-    /// </summary>
     public void BeginRun(int startingWave = 1)
     {
         InitializeEnemyTypes();
@@ -307,9 +299,8 @@ public class WaveManager : MonoBehaviour
         StartNextWave();
     }
 
-    /// <summary>
+
     /// Starts the next wave in the sequence.
-    /// </summary>
     public void StartNextWave()
     {
         Debug.Log($"[WaveManager] Starting wave {currentWave}");
@@ -324,17 +315,14 @@ public class WaveManager : MonoBehaviour
         currentWaveCoroutine = StartCoroutine(RunWave(currentWave));
     }
 
-    /// <summary>
+
     /// Stops the current wave and resets all state.
-    /// </summary>
     public void StopCurrentWave()
     {
         ResetState();
     }
 
-    /// <summary>
     /// Resets the wave manager state.
-    /// </summary>
     void ResetState()
     {
         if (currentWaveCoroutine != null)
@@ -362,9 +350,7 @@ public class WaveManager : MonoBehaviour
     #endregion
 
     #region Wave Execution
-    /// <summary>
     /// Executes a single wave from start to completion.
-    /// </summary>
     IEnumerator RunWave(int waveNumber)
     {
         Debug.Log($"[WaveManager] Running wave {waveNumber}");
@@ -414,9 +400,7 @@ public class WaveManager : MonoBehaviour
         StartBuildPhase();
     }
 
-    /// <summary>
     /// Cleans up wave-specific data and modifiers.
-    /// </summary>
     void CleanupWave(WaveComposition wave)
     {
         RestoreOriginalEnemyStats();
@@ -428,9 +412,8 @@ public class WaveManager : MonoBehaviour
     #endregion
 
     #region Wave Generation
-    /// <summary>
+
     /// Generates a randomized wave composition based on budget and available enemies.
-    /// </summary>
     WaveComposition GenerateRandomWave(int waveNumber, System.Random rng, int rerollDepth = 0)
     {
         WaveComposition wave = new WaveComposition
@@ -511,9 +494,8 @@ public class WaveManager : MonoBehaviour
         return wave;
     }
 
-    /// <summary>
+
     /// Calculates the budget for a wave based on wave number and variance.
-    /// </summary>
     int CalculateWaveBudget(int waveNumber, System.Random rng, bool isBossWave)
     {
         int baseBudgetValue = Mathf.Max(1, baseWaveBudget + (waveNumber - 1) * budgetPerWave);
@@ -530,9 +512,7 @@ public class WaveManager : MonoBehaviour
         return budget;
     }
 
-    /// <summary>
     /// Gathers all enemies eligible for spawning in the given wave.
-    /// </summary>
     List<FactionEnemyEntry> GatherEligibleEntries(int waveNumber)
     {
         List<FactionEnemyEntry> entries = new List<FactionEnemyEntry>();
@@ -549,9 +529,7 @@ public class WaveManager : MonoBehaviour
         return entries;
     }
 
-    /// <summary>
     /// Picks a random enemy from the eligible list based on spawn weights.
-    /// </summary>
     FactionEnemyEntry PickEnemyEntry(List<FactionEnemyEntry> entries, System.Random rng, Dictionary<FactionEnemyEntry, int> counts, int remainingBudget, bool bossOnly)
     {
         List<FactionEnemyEntry> candidates = new List<FactionEnemyEntry>();
@@ -597,9 +575,7 @@ public class WaveManager : MonoBehaviour
         return candidates[candidates.Count - 1];
     }
 
-    /// <summary>
     /// Builds the list of enemy spawns from the count dictionary.
-    /// </summary>
     List<EnemySpawn> BuildEnemySpawns(Dictionary<FactionEnemyEntry, int> counts, System.Random rng)
     {
         List<EnemySpawn> spawns = new List<EnemySpawn>();
@@ -622,9 +598,7 @@ public class WaveManager : MonoBehaviour
         return spawns;
     }
 
-    /// <summary>
     /// Registers a spawn in the count dictionary.
-    /// </summary>
     void RegisterSpawn(FactionEnemyEntry entry, Dictionary<FactionEnemyEntry, int> counts)
     {
         if (counts.TryGetValue(entry, out int current))
@@ -639,9 +613,7 @@ public class WaveManager : MonoBehaviour
     #endregion
 
     #region Enemy Spawning
-    /// <summary>
     /// Spawns all enemies in the wave composition with delays.
-    /// </summary>
     IEnumerator SpawnWaveEnemies(WaveComposition wave, System.Random rng)
     {
         enemiesRemaining = wave.enemies.Sum(e => e.count);
@@ -667,9 +639,7 @@ public class WaveManager : MonoBehaviour
         }
     }
 
-    /// <summary>
     /// Spawns a single enemy at a random spawn point.
-    /// </summary>
     void SpawnEnemy(string enemyTypeName, System.Random rng)
     {
         if (string.IsNullOrEmpty(enemyTypeName))
@@ -728,9 +698,7 @@ public class WaveManager : MonoBehaviour
         activeEnemies.Add(enemy);
     }
 
-    /// <summary>
     /// Gets a random spawn position from configured spawn points.
-    /// </summary>
     Vector3 GetRandomSpawnPosition(System.Random rng)
     {
         if (spawnPoints != null && spawnPoints.Length > 0)
@@ -745,9 +713,7 @@ public class WaveManager : MonoBehaviour
         return RandomPointInCircle(rng, spawnRadius);
     }
 
-    /// <summary>
     /// Generates a random point within a circle.
-    /// </summary>
     Vector3 RandomPointInCircle(System.Random rng, float radius)
     {
         if (radius <= 0f)
@@ -762,9 +728,7 @@ public class WaveManager : MonoBehaviour
     #endregion
 
     #region Special Wave Modifiers
-    /// <summary>
     /// Creates and applies a special wave modifier.
-    /// </summary>
     SpecialWaveModifier CreateSpecialWaveModifier(WaveComposition wave, int waveNumber)
     {
         if (wave == null || wave.enemies == null || wave.enemies.Count == 0)
@@ -827,9 +791,7 @@ public class WaveManager : MonoBehaviour
         }
     }
 
-    /// <summary>
     /// Restores original enemy stats after special waves.
-    /// </summary>
     void RestoreOriginalEnemyStats()
     {
         if (originalStats.Count == 0) return;
@@ -853,9 +815,7 @@ public class WaveManager : MonoBehaviour
     #endregion
 
     #region Enemy Callbacks
-    /// <summary>
     /// Called when an enemy dies.
-    /// </summary>
     void OnEnemyDeath(GameObject enemy)
     {
         if (enemy == null) return;
@@ -879,9 +839,7 @@ public class WaveManager : MonoBehaviour
         }
     }
 
-    /// <summary>
     /// Safety check to remove null enemies from tracking.
-    /// </summary>
     void SafetyPruneDeadEnemies()
     {
         int removedCount = 0;
@@ -908,9 +866,7 @@ public class WaveManager : MonoBehaviour
     #endregion
 
     #region Loot System
-    /// <summary>
     /// Drops boss loot at the specified position.
-    /// </summary>
     void DropBossLoot(Vector3 position, string lootTableName)
     {
         if (LootSystem.Instance == null)
@@ -923,9 +879,7 @@ public class WaveManager : MonoBehaviour
         LootSystem.Instance.DropBossLoot(position, table);
     }
 
-    /// <summary>
     /// Attempts to drop loot from a regular enemy based on drop chance.
-    /// </summary>
     void TryDropEnemyLoot(Vector3 position, EnemyBehavior behavior)
     {
         if (LootSystem.Instance == null)
@@ -953,9 +907,7 @@ public class WaveManager : MonoBehaviour
     #endregion
 
     #region Build Phase
-    /// <summary>
     /// Starts the build phase after a wave is complete.
-    /// </summary>
     public void StartBuildPhase()
     {
         if (!useBuildPhases)
@@ -992,9 +944,7 @@ public class WaveManager : MonoBehaviour
         Debug.Log($"[WaveManager] Build Phase started after wave {currentWave}.");
     }
 
-    /// <summary>
     /// Finishes the build phase and starts the next wave.
-    /// </summary>
     public void FinishBuildPhase()
     {
         if (currentWave >= maxWaves)
@@ -1025,9 +975,7 @@ public class WaveManager : MonoBehaviour
         }
     }
 
-    /// <summary>
     /// Waits for a delay before starting the next wave.
-    /// </summary>
     IEnumerator StartNextWaveAfterDelay(float delay)
     {
         yield return new WaitForSeconds(delay);
@@ -1037,9 +985,7 @@ public class WaveManager : MonoBehaviour
     #endregion
 
     #region Stronghold
-    /// <summary>
     /// Damages the stronghold by the specified amount.
-    /// </summary>
     public void DamageStronghold(int amount)
     {
         if (amount <= 0) return;
@@ -1065,9 +1011,7 @@ public class WaveManager : MonoBehaviour
     #endregion
 
     #region Utility Methods
-    /// <summary>
     /// Resolves the player anchor transform for enemy targeting.
-    /// </summary>
     Transform ResolvePlayerAnchor()
     {
         if (playerDetectionAnchor != null)
@@ -1110,9 +1054,7 @@ public class WaveManager : MonoBehaviour
         return enemyType;
     }
 
-    /// <summary>
     /// Resolves the display name for a faction enemy entry.
-    /// </summary>
     string ResolveEntryName(FactionEnemyEntry entry)
     {
         if (entry == null) return DEFAULT_ENEMY_NAME;
@@ -1121,9 +1063,7 @@ public class WaveManager : MonoBehaviour
         return DEFAULT_ENEMY_NAME;
     }
 
-    /// <summary>
     /// Builds a unique signature for a wave composition.
-    /// </summary>
     string BuildWaveSignature(WaveComposition wave)
     {
         if (wave == null || wave.enemies == null || wave.enemies.Count == 0)
@@ -1138,9 +1078,7 @@ public class WaveManager : MonoBehaviour
         return string.Join("|", parts);
     }
 
-    /// <summary>
     /// Checks if a wave signature is a duplicate.
-    /// </summary>
     bool IsDuplicateSignature(string signature)
     {
         if (string.IsNullOrEmpty(signature))
@@ -1156,9 +1094,7 @@ public class WaveManager : MonoBehaviour
         return generatedWaveSignatures.Contains(signature);
     }
 
-    /// <summary>
     /// Shuffles a list using the Fisher-Yates algorithm.
-    /// </summary>
     void Shuffle<T>(IList<T> list, System.Random rng)
     {
         for (int i = list.Count - 1; i > 0; i--)
@@ -1170,9 +1106,7 @@ public class WaveManager : MonoBehaviour
         }
     }
 
-    /// <summary>
     /// Gets a seeded random number generator for the wave.
-    /// </summary>
     System.Random GetWaveRandom(int waveNumber)
     {
         if (RunState.Instance != null)
@@ -1183,9 +1117,7 @@ public class WaveManager : MonoBehaviour
         return new System.Random(fallbackRandom.Next());
     }
 
-    /// <summary>
     /// Logs the composition of a generated wave.
-    /// </summary>
     void LogWaveComposition(int waveNumber, WaveComposition wave, int targetBudget, int usedBudget)
     {
         string composition = string.Join(", ", wave.enemies.Select(e => $"{e.enemyTypeName} x{e.count}"));
