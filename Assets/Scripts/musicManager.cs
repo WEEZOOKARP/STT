@@ -2,6 +2,7 @@ using UnityEngine;
 
 public class musicManager : MonoBehaviour
 {
+    public boolean debug = false;
     [Header("Music Sources")]
     public float fadeSpeed = 2f;
     public AudioSource calmMusic;
@@ -57,14 +58,17 @@ public class musicManager : MonoBehaviour
                 targetCalmVolume,
                 Time.deltaTime * fadeSpeed
             );
-            print("Calm Music Volume : " + calmMusic.volume);
+            if (debug) {
+                print("Calm Music Volume : " + calmMusic.volume);
+            }
             battleMusic.volume = Mathf.MoveTowards(
                 battleMusic.volume,
                 targetBattleVolume,
                 Time.deltaTime * fadeSpeed
             );
-            print("Battle Music Volume : " + battleMusic.volume);
-
+            if (debug) {
+                print("Battle Music Volume : " + battleMusic.volume);
+            }
             // stop when both are close enough to targets
             if (Mathf.Approximately(calmMusic.volume, targetCalmVolume) &&
                 Mathf.Approximately(battleMusic.volume, targetBattleVolume))
