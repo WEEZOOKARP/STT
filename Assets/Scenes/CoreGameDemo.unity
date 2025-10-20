@@ -54852,8 +54852,6 @@ MonoBehaviour:
   dryFireSound: {fileID: 8300000, guid: 33a77386bfa3d4457895bfcbd5d5728e, type: 3}
   allowAutomaticFire: 1
   fireInput: Fire1
-  rifleLoopSound: {fileID: 0}
-  rifleLoopEndSound: {fileID: 0}
 --- !u!33 &3541775692574326584
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -86498,8 +86496,6 @@ MonoBehaviour:
   dryFireSound: {fileID: 8300000, guid: 33a77386bfa3d4457895bfcbd5d5728e, type: 3}
   allowAutomaticFire: 0
   fireInput: Fire1
-  rifleLoopSound: {fileID: 0}
-  rifleLoopEndSound: {fileID: 0}
 --- !u!4 &7370780515122707146
 Transform:
   m_ObjectHideFlags: 0
@@ -96119,8 +96115,6 @@ MonoBehaviour:
   dryFireSound: {fileID: 8300000, guid: 33a77386bfa3d4457895bfcbd5d5728e, type: 3}
   allowAutomaticFire: 0
   fireInput: Fire1
-  rifleLoopSound: {fileID: 0}
-  rifleLoopEndSound: {fileID: 0}
 --- !u!224 &7612891396926665917
 RectTransform:
   m_ObjectHideFlags: 0
