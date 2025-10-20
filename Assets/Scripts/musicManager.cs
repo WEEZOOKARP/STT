@@ -57,12 +57,13 @@ public class musicManager : MonoBehaviour
                 targetCalmVolume,
                 Time.deltaTime * fadeSpeed
             );
-
+            print("Calm Music Volume : " + calmMusic.volume);
             battleMusic.volume = Mathf.MoveTowards(
                 battleMusic.volume,
                 targetBattleVolume,
                 Time.deltaTime * fadeSpeed
             );
+            print("Battle Music Volume : " + battleMusic.volume);
 
             // stop when both are close enough to targets
             if (Mathf.Approximately(calmMusic.volume, targetCalmVolume) &&
