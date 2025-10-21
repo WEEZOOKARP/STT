@@ -10,7 +10,7 @@ public class CoinPickupVisual : MonoBehaviour
     public float delayBeforeHoming = 0.15f;   // hang time before homing
     public float homingSpeed = 8f;            // base home speed
     public float homingAccel = 12f;           // ramps up over time
-    public float collectRadius = 0.6f;        // distance to “collect”
+    public float collectRadius = 0.6f;        // distance to â€œcollectâ€
     public float maxLifetime = 6f;            // safety cleanup
 
     [Header("FX (optional)")]
@@ -37,7 +37,7 @@ public class CoinPickupVisual : MonoBehaviour
     void Update()
     {
         age += Time.deltaTime;
-        if (age > maxLifetime) { Destroy(gameObject); return; }
+        if (age > maxLifetime) { Destroy(gameObject); return; } // remove after time, stops build up
 
         if (!homing)
         {
@@ -51,14 +51,14 @@ public class CoinPickupVisual : MonoBehaviour
 
         if (target == null)
         {
-            // drift upward if there’s no target to home to
+            // drift upward if thereâ€™s no target to home to
             transform.position += Vector3.up * 0.2f * Time.deltaTime;
             return;
         }
 
         var to = target.position - transform.position;
         var dist = to.magnitude;
-        if (dist <= collectRadius)
+        if (dist <= collectRadius) // measure distance between player transform and target
         {
             if (collectFx) Instantiate(collectFx, transform.position, Quaternion.identity);
             if (sfx && collectSfx) sfx.PlayOneShot(collectSfx);
