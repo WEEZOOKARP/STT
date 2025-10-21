@@ -132,7 +132,7 @@ public class Gun : MonoBehaviour
                 gunSound.PlayOneShot(reloadSound);
             animator.SetTrigger("RELOAD");
             ammo.Reload(5);
-            // Notify DailyTaskManager that the game started
+            // Notify DailyTaskManager that the gun has reloaded.
             DailyTaskManager.Instance?.OnReload();
             Debug.Log($"{gameObject.name} reloaded!");
         }
