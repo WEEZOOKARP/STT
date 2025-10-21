@@ -56,7 +56,7 @@ public class statusBar : MonoBehaviour
 void Update()
 {
     // --- Testing hotkeys ---
-    if (Input.GetKeyDown(KeyCode.D))  ActivateDefence();
+    if (Input.GetKeyDown(KeyCode.O))  ActivateDefence();
     if (Input.GetKeyDown(KeyCode.R))  ActivateRegen();
     if (Input.GetKeyDown(KeyCode.P))  ActivatePower();
 

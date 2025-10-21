@@ -60,6 +60,10 @@ public class Status : MonoBehaviour
     public void TakeDamage(int amount)
     {
         playerHealth -= amount;
+
+        // Debug message
+        Debug.Log($"Player took {amount} damage! Current HP: {playerHealth}/{maxHealth}");
+
         if (playerHealth < 0)
         {
             playerHealth = 0;
