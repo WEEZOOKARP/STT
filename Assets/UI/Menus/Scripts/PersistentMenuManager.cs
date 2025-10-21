@@ -23,9 +23,8 @@ public class PersistentMenuManager : MonoBehaviour
         }
     }
 
-    [Header("Menu Prefab Repository")]
+    [Header("In-game Menu Prefab Repository")]
     public GameObject pauseMenuPrefab;
-    public GameObject mainMenuPrefab;
     public GameObject settingsMenuPrefab;
 
     // public GameObject tutorialOverlayPrefab; - Making separate manager for tutorial.
@@ -41,11 +40,20 @@ public class PersistentMenuManager : MonoBehaviour
     // MainMenu instance not persisted in here - so no instance tracking needed I believe.
     private GameObject currentSettingsMenuInstance;
     private GameObject currentPauseMenuInstance;
-    private string currentMenuName;
 
-    private MenuState menuState; // Destroyed, Cached, Open.
+    // Intializing MenuStates.
     private MenuState pauseMenuState = MenuState.Destroyed;
     private MenuState settingsMenuState = MenuState.Destroyed;
+
+    // Scene type enum.
+
+    // -------------------------------------------------------
+    // Redundant - currently not utilized.
+    // private string currentMenuName;
+
+    // Redundant - am referencing specifics from enum.
+    // private MenuState menuState; // Destroyed, Cached, Open.
+    // -------------------------------------------------------
 
     // Smart caching with timer.
     private float pauseMenuCacheTimer = 0f;
@@ -122,7 +130,9 @@ public class PersistentMenuManager : MonoBehaviour
     void SceneDetection()
     {
         SceneManager.sceneLoaded += OnSceneLoaded;
-        SceneManager.sceneUnloaded += OnSceneUnloaded;
+        // Redundant - currently not required, due to "MainMenu" option within
+        // OnSceneLoaded method.
+        // SceneManager.sceneUnloaded += OnSceneUnloaded;
     }
 
     // Handling scene change.
@@ -133,13 +143,14 @@ public class PersistentMenuManager : MonoBehaviour
         {
             case "GameScene":
                 // Pre-creating menus (hidden) so they're ready when user needs them.
-                SmartMenuCreation();
+                SmartMenuCreation("pauseMenuOnly");
                 // Telling MenuManager where to find them.
                 ProvidingMenuReferencesToMenuManager();
                 break;
             case "MainMenu":
                 // Cleaning up when leaving game.
                 DestroyGameMenus();
+                MenuManager.Instance.ReturnToMainMenu();
                 break;
             default:
                 Debug.Log("Error finding current scene: " + scene.name);
@@ -147,53 +158,42 @@ public class PersistentMenuManager : MonoBehaviour
         }
     }
 
-    // Smart menu creation - changed from 'EnsureGameMenusExist()'.
-    void SmartMenuCreation()
+    // Destroys both GameMenus here to prepare to exit to mainMenu.
+    void DestroyGameMenus()
     {
-        // Only creating menu if it doesn't exist - smart caching.
-        if (currentPauseMenuInstance == null)
-        {
-            currentPauseMenuInstance = Instantiate(pauseMenuPrefab);
-            currentPauseMenuInstance.SetActive(false); // Hidden until needed by user.
-            pauseMenuState = MenuState.Cached;
-        }
+        // Destroying settingsMenu first, as it is a 'child' of pauseMenu in a UI sense.
+        DestroySettingsMenu();
+        Debug.Log("Destroyed settings menu.");
 
-        if (currentSettingsMenuInstance == null)
-        {
-            currentSettingsMenuInstance = Instantiate(settingsMenuPrefab);
-            currentSettingsMenuInstance.SetActive(false); // Hidden until needed by user.
-            settingsMenuState = MenuState.Cached;
-        }
+        DestroyPauseMenu();
+        Debug.Log("Destroyed pause menu.");
     }
 
-    // Creating new menu.
-    GameObject CreateNewMenu(string menuName)
+    // Smart menu creation - changed from 'EnsureGameMenusExist()'.
+    public void SmartMenuCreation(string menuType)
     {
-        // TODO: Prefab instantiation logic.
-        switch (menuName)
+        // Using inclusion logic to check which menu is being requested.
+        if (menuType == "pauseMenuOnly")
         {
-            // case "MainMenu":
-            //     current = Instantiate(mainMenuPrefab);
-            //     break;
-            // Don't think we want to keep mainMenu in here or instantiate it in this class?
-            case "PauseMenu":
+            // Only creating menu if it doesn't exist - smart caching.
+            if (currentPauseMenuInstance == null)
+            {
                 currentPauseMenuInstance = Instantiate(pauseMenuPrefab);
-                return currentPauseMenuInstance;
-            // break;
-            // --- MOVING TUTORIAL STUFF TO ANOTHER MANAGER ---
-            //case "TutorialMenu":
-            //   currentMenuInstance = Instantiate(tutorialOverlayPrefab);
-            //   break;
-            case "SettingsMenu":
-                currentSettingsMenuInstance = Instantiate(settingsMenuPrefab);
-                return currentSettingsMenuInstance;
-            // break;
-            default:
-                Debug.LogWarning("Invalid menu name: " + menuName);
-                break;
+                // currentPauseMenuInstance.SetActive(false); // Hidden until needed by user.
+                pauseMenuState = MenuState.Cached;
+            }
         }
-        Debug.Log("Created new menu: " + menuName);
-        return null;
+
+        if (menuType == "settingsMenuOnly")
+        {
+            // Only creating menu if it doesn't exist - smart caching.
+            if (currentSettingsMenuInstance == null)
+            {
+                currentSettingsMenuInstance = Instantiate(settingsMenuPrefab);
+                currentSettingsMenuInstance.SetActive(false); // Hidden until needed by user.
+                settingsMenuState = MenuState.Cached;
+            }
+        }
     }
 
     // Provifing prefabs to MenuManager.
@@ -210,24 +210,58 @@ public class PersistentMenuManager : MonoBehaviour
         }
     }
 
+    // ===== Logic for display to be moved to PauseMenuController. ======
+    // public void OpenPauseMenu()
+    // {
+    //     // Last line of "security" check that we ARE infact in the gameScene.
+    //     if (MenuManager.Instance.currentSceneType == "GameScene")
+    //     {
+    //         MenuManager.Instance.pauseMenuCanvas.SetActive(true);
+    //     } else {
+    //         Debug.Log("Cannot open pauseMenu, not currently in gameScene.\n
+    //         Error thrown from OpenPauseMenu method in PersistentMenuManager.cs!");
+    //     }
+    // }
+
     // Public method to allow other systems to open menu.
     public void OpenMenu(string menuType)
     {
         switch (menuType)
         {
             case "PauseMenu":
-                // Reseting cache timer since menu is being used.
-                pauseMenuCacheTimer = 0f;
-                pauseMenuState = MenuState.Open;
-                // Telling MenuManager to show the menu.
-                if (MenuManager.Instance != null)
-                    MenuManager.Instance.OpenPauseMenu();
+                if (currentPauseMenuInstance == null)
+                {
+                    // Recreating pauseMenu if destroyed.
+                    SmartMenuCreation("pauseMenuOnly");
+                    // Updating references automatically.
+                    ProvidingMenuReferencesToMenuManager();
+                    // Using helper method 'OpenPauseMenu' to open PauseMenu.
+                    OpenPauseMenu();
+                }
+                else if (pauseMenuState == MenuState.Cached)
+                {
+                    // Using helper method 'OpenPauseMenu' to open PauseMenu.
+                    OpenPauseMenu();
+                    // TODO: Implement opening of ('old') cached menu further.
+                    pauseMenuState = MenuState.Open;
+                    pauseMenuCacheTimer = 0f;
+                }
                 break;
             case "SettingsMenu":
-                // Reseting cache timer since settings menu is being used.
-                settingsMenuCacheTimer = 0f;
-                settingsMenuState = MenuState.Open;
-                // TODO: Add method to tell MenuManaager to show settings.
+                if (currentSettingsMenuInstance == null)
+                {
+                    // Recreating settingsMenu if destroyed.
+                    SmartMenuCreation("settingsMenuOnly");
+                    // Updating references automatically.
+                    ProvidingMenuReferencesToMenuManager();
+                    // TODO: Implement opening of new menu.
+                }
+                else if (settingsMenuState == MenuState.Cached)
+                {
+                    // TODO: Implement opening of ('old') cached menu further.
+                    settingsMenuState = MenuState.Open;
+                    settingsMenuCacheTimer = 0f;
+                }
                 break;
         }
     }
@@ -237,14 +271,44 @@ public class PersistentMenuManager : MonoBehaviour
     {
         switch (menuType)
         {
+            // TODO: Figure out how we want the menu's to close and persist hierachy wise.
+            // Since to open the settingsMenu (in game), you must first be in the pauseMenu,
+            // ideally, the pauseMenu will be cached and persist during the time the settingsMenu
+            // is open. Then, upon the settingsMenu's closure, it should still be 'alive' and
+            // should appear open.
+            // The only times the pauseMenu should close, is when the game is exited by any means
+            // (including exiting to the mainMenu), or when the player taps to resume game.
             case "PauseMenu":
                 pauseMenuState = MenuState.Cached; // Back to being cached - start timer.
                 pauseMenuCacheTimer = 0f; // Reset timer.
+                // TODO: Implement the resuming of game.
                 break;
             case "SettingsMenu":
                 settingsMenuState = MenuState.Cached; // Back to being cached - start timer.
                 settingsMenuCacheTimer = 0f; // Reset timer.
+                // TODO: Open up pauseMenu (visually).
                 break;
         }
+    }
+
+    // Method called when checking if menuType exists.
+    public bool doesGameMenuExist(string menuType)
+    {
+        if (menuType == "PauseMenu")
+        {
+            if (currentPauseMenuInstance != null)
+            {
+                return true;
+            }
+        }
+        if (menuType == "SettingsMenu")
+        {
+            if (currentSettingsMenuInstance != null)
+            {
+                return true;
+            }
+        }
+
+        return false; // No, it does not.
     }
 }

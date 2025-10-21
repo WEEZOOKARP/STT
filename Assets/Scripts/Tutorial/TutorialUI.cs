@@ -12,7 +12,7 @@ public class TutorialUI : MonoBehaviour
         TutorialManager.OnStepStarted += OnStepStarted;
         TutorialManager.OnTutorialCompleted += OnTutorialCompleted;
         
-        // Use Invoke to check state after all Start() methods have run
+        // Use Invoke to check state after all Start() methods have run.
         Invoke(nameof(CheckInitialState), 0.1f);
     }
     

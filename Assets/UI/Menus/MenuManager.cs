@@ -10,9 +10,9 @@
  * Dependencies: None (Singleton)
  *
  * Integration Points:
- * - Called by InputManager for ESC key handling
- * - Used by Tutorial system for menu-based tutorials
- * - Manages scene transitions between Game and MainMenu
+ * - Called by InputManager for ESC key handling.
+ * - Used by Tutorial system for menu-based tutorials.
+ * - Manages scene transitions between Game and MainMenu.
  */
 
 using System;
@@ -23,6 +23,9 @@ public class MenuManager : MonoBehaviour
     // Singleton instance for global access.
     public static MenuManager Instance { get; private set; }
 
+    [Header("Settings Menu's - Parent Menu")]
+    public string settingsParentMenu = ""; // "MainMenu" or "PauseMenu".
+
     // Events for tutorial system integration.
     public static event Action OnMenuOpened;
     public static event Action OnMenuClosed;
@@ -31,16 +34,26 @@ public class MenuManager : MonoBehaviour
     public bool isMenuOpen = false;
     public MenuState currentMenuState = MenuState.Closed;
 
+    [Header("Current Scene Type")]
+    public SceneType currentSceneType = SceneType.MainMenu;
+
     [Header("Menu References")]
-    public GameObject pauseMenuCanvas = false;
-    public GameObject tutorialOverlayCanvas = false;
+    public GameObject pauseMenuCanvas = null;
+    public GameObject settingsMenuCanvas = null;
+    public GameObject tutorialOverlayCanvas = null;
 
     public enum MenuState
     {
         Closed, // TODO: Do we need closed here? Do we not just figure this in persistentManager?
         PauseMenu,
-        TutorialOverlay,
+        MainMenu,
         Settings,
+    }
+
+    public enum SceneType
+    {
+        GameScene,
+        MainMenuScene,
     }
 
     void Awake()
@@ -100,32 +113,114 @@ public class MenuManager : MonoBehaviour
         }
     }
 
-    // Opens the pause menu and pauses the game.
-    public void OpenPauseMenu()
+    // Support for opening settings.
+    public void OpenSettingsMenu(string parentMenu = "")
     {
-        if (currentMenuState != MenuState.Closed)
-            return;
-
-        Debug.Log("[MenuManager] Opening pause menu");
-
-        currentMenuState = MenuState.PauseMenu;
-        isMenuOpen = true;
-
-        if (pauseMenuCanvas != null)
-            pauseMenuCanvas.SetActive(true);
-
-        // Only pause game if not in tutorial - Added by Archie [26/09/25]
-        // Purpose: Keep game running during tutorial so UI buttons work.
-        if (
-            TutorialManager.Instance == null
-            || TutorialManager.Instance.currentState != TutorialManager.TutorialState.Running
-        )
+        // Checking that a settings menu instance exists and if not, initializing one.
+        if (!PersistentMenuManager.Instance.doesGameMenuExist("SettingsMenu"))
         {
-            Time.timeScale = 0f;
+            // Creating settingsMenu and providing references of said menu to MenuManager.cs
+            PersistentMenuManager.Instance.SmartMenuCreation("settingsMenuOnly");
+            PersistentMenuManager.Instance.ProvidingMenuReferencesToMenuManager();
         }
 
-        // Notify tutorial system
-        OnMenuOpened?.Invoke();
+        // SceneType determines which controller we are to call.
+        if (currentSceneType == SceneType.MainMenuScene)
+        {
+            // For MainMenu - Calling MainMenuController to handle display.
+            if (MainMenuController.Instance != null)
+            {
+                MainMenuController.Instance.ShowSettingPanel();
+            }
+        }
+        else if (currentSceneType == SceneType.GameScene)
+        {
+            // For PauseMenu - Calling PauseMenuController to handle display.
+            if (PauseMenuController.Instance != null)
+            {
+                PauseMenuController.Instance.ShowSettingPanel();
+            }
+        }
+
+        // Business Logic.
+        settingsParentMenu = parentMenu;
+        currentMenuState = MenuState.Settings;
+    }
+
+    // Support for closing settings.
+    // This is actually broken.
+    // TODO: Fix this AHAAHSHAHHSHAGSaUsbaou!
+    public void CloseSettingsMenu()
+    {
+        if (settingsMenuCanvas != null)
+        {
+            // REDUNDANT - Display logic for settings; SettingsMenuController.cs
+            settingsMenuCanvas.SetActive(false);
+        }
+        // Close the setting menu first.
+        PersistentMenuManager.Instance.CloseMenu("SettingsMenu");
+
+        // Return to parent menu based on stored context.
+        if (settingsParentMenu == "MainMenu")
+        {
+            // Handle MainMenu display logic.
+            currentMenuState = MenuState.MainMenu;
+            // Asking MainMenuManager to show mainMenu.
+            if (MainMenuManager.Instance != null)
+            {
+                MainMenuManager.Instance.ShowMainMenu();
+            }
+        }
+        else if (settingsParentMenu == "PauseMenu")
+        {
+            currentMenuState = MenuState.PauseMenu;
+            // Handle PauseMenu display logic.
+            if (PersistentMenuManager.doesGameMenuExist("PauseMenu"))
+            {
+                PersistentMenuManager.Instance.OpenMenu("PauseMenu");
+            }
+        }
+    }
+
+    bool doesMenuExist(string menuType)
+    {
+        if (menuType == "PauseMenu")
+        {
+            if (PersistentMenuManager.Instance.currentPauseMenuInstance != null)
+            {
+                return true;
+            }
+        }
+        else if (menuType == "MainMenu")
+        {
+            if (MainMenuManager.Instance.currentMainMenuInstance != null)
+            {
+                return true;
+            }
+        }
+        // Menu does not exist.
+        return false;
+    }
+
+    // Opens the pause menu.
+    public void OpenPauseMenu()
+    {
+        if (!PersistentMenuManager.Instance.doesGameMenuExist("PauseMenu"))
+        {
+            PersistentMenuManager.Instance.SmartMenuCreation("pauseMenuOnly");
+            PersistentMenuManager.Instance.ProvidingMenuReferencesToMenuManager();
+        }
+
+        // MenuManager to handle display of PauseMenu, such as it does for SettingsMenu.
+        currentMenuState = MenuState.PauseMenu;
+        if (pauseMenuCanvas != null)
+        {
+            // REDUNDANT - Display logic for settings; PauseMenuController.cs
+            pauseMenuCanvas.SetActive(true);
+        }
+
+        // Updating PersistentMenuManager state.
+        PersistentMenuManager.Instance.OpenMenu("PauseMenu");
     }
 
     // Closes all menus and resumes the game.
@@ -191,11 +286,13 @@ public class MenuManager : MonoBehaviour
     }
 
     // Shows tutorial overlays for menu explanation.
+    // REDUNDANT CURRENTLY - Tutorial hints and otherwise overlays need to be
+    // managed elsewhere.
     public void ShowTutorialOverlay()
     {
         Debug.Log("[MenuManager] Showing tutorial overlay");
 
-        currentMenuState = MenuState.TutorialOverlay;
+        // currentMenuState = MenuState.TutorialOverlay;
 
         if (tutorialOverlayCanvas != null)
             tutorialOverlayCanvas.SetActive(true);
@@ -219,7 +316,13 @@ public class MenuManager : MonoBehaviour
         isMenuOpen = false;
 
         if (pauseMenuCanvas != null)
+            // REDUNDANT - Display logic for settings; PauseMenuController.cs
             pauseMenuCanvas.SetActive(false);
+        if (settingsMenuCanvas != null)
+            // REDUNDANT - Display logic for settings; SettingsMenuController.cs
+            settingsMenuCanvas.SetActive(false);
+        // TODO: Figure out how to move tutorial management explicitly to a separate part
+        // of project as it should be (and some logic already is).
         if (tutorialOverlayCanvas != null)
             tutorialOverlayCanvas.SetActive(false);
     }
