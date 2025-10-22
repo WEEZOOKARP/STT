@@ -235,16 +235,16 @@ public class PersistentMenuManager : MonoBehaviour
                     SmartMenuCreation("pauseMenuOnly");
                     // Updating references automatically.
                     ProvidingMenuReferencesToMenuManager();
-                    // Using helper method 'OpenPauseMenu' to open PauseMenu.
-                    OpenPauseMenu();
                 }
                 else if (pauseMenuState == MenuState.Cached)
                 {
-                    // Using helper method 'OpenPauseMenu' to open PauseMenu.
-                    OpenPauseMenu();
-                    // TODO: Implement opening of ('old') cached menu further.
+                    // Opening cached system.
                     pauseMenuState = MenuState.Open;
                     pauseMenuCacheTimer = 0f;
+                }
+                if (PauseMenuController.Instance != null)
+                {
+                    PauseMenuController.Instance.OpenPauseMenu();
                 }
                 break;
             case "SettingsMenu":
@@ -258,10 +258,15 @@ public class PersistentMenuManager : MonoBehaviour
                 }
                 else if (settingsMenuState == MenuState.Cached)
                 {
-                    // TODO: Implement opening of ('old') cached menu further.
                     settingsMenuState = MenuState.Open;
                     settingsMenuCacheTimer = 0f;
                 }
+
+                if (SettingsMenuController.Instance != null)
+                {
+                    SettingsMenuController.Instance.OpenSettingsMenu();
+                }
+
                 break;
         }
     }
@@ -281,12 +286,10 @@ public class PersistentMenuManager : MonoBehaviour
             case "PauseMenu":
                 pauseMenuState = MenuState.Cached; // Back to being cached - start timer.
                 pauseMenuCacheTimer = 0f; // Reset timer.
-                // TODO: Implement the resuming of game.
                 break;
             case "SettingsMenu":
                 settingsMenuState = MenuState.Cached; // Back to being cached - start timer.
                 settingsMenuCacheTimer = 0f; // Reset timer.
-                // TODO: Open up pauseMenu (visually).
                 break;
         }
     }

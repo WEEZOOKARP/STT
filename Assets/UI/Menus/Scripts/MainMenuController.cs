@@ -23,6 +23,9 @@ public class MainMenuController : MonoBehaviour
     [Header("Scene Configuration")]
     public string gameSceneName = "Game";
 
+    [Header("Main Menu Panel(s)")]
+    public GameObject mainMenuPanel;
+
     [Header("Main Menu Buttons")]
     public Button playButton;
     public Button tutorialButton;
@@ -117,6 +120,36 @@ public class MainMenuController : MonoBehaviour
         SceneManager.LoadScene(gameSceneName);
     }
 
+    // Quits the application.
+    public void QuitGame()
+    {
+        Debug.Log("[MainMenuController] Quit button clicked");
+
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
+    }
+
+    // Hides the mainMenu.
+    private void HideMainMenu()
+    {
+        if (mainMenuPanel != null)
+        {
+            mainMenuPanel.SetActive(false);
+        }
+    }
+
+    // Shows the mainMenu.
+    private void ShowMainMenu()
+    {
+        if (mainMenuPanel != null)
+        {
+            mainMenuPanel.SetActive(true);
+        }
+    }
+
     // Opens the settings menu.
     public void OpenSettings()
     {
@@ -129,15 +162,14 @@ public class MainMenuController : MonoBehaviour
         }
     }
 
-    // Quits the application.
-    public void QuitGame()
+    // Closes settings and returns to mainMenu.
+    public void CloseSettings()
     {
-        Debug.Log("[MainMenuController] Quit button clicked");
+        Debug.Log("[MainMenuController] Closing settings.");
 
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-#else
-        Application.Quit();
-#endif
+        if (SettingsMenuController.Instance != null)
+        {
+            SettingsMenuController.Instance.CloseSettings();
+        }
     }
 }

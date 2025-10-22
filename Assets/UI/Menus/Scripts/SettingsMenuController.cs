@@ -16,7 +16,7 @@ public class SettingsMenuController : MonoBehaviour
     // Need to also have the sound as a slider perhaps?
 
     [Header("Menu Panels")]
-    public GameObject settingsPanel = false;
+    public GameObject settingsPanel = null;
 
     void Awake()
     {
@@ -58,7 +58,7 @@ public class SettingsMenuController : MonoBehaviour
         MenuManager.Instance.CloseSettingsMenu();
 
         // Controller calls helper method to handle display close.
-
+        closeSettingsDisplay();
         // TODO: Implement an actual settings system and a save system to call.
         // Additionally, need to exit to the parent menu;
         // Furthermore, if settings have been changed and not applied yet, prompt user

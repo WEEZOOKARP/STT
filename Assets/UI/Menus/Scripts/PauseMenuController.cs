@@ -26,7 +26,7 @@ public class PauseMenuController : MonoBehaviour
     public Button mainMenuButton;
     public Button quitButton;
 
-    [Header("Menu Panels")]
+    [Header("Pause Menu Panels")]
     public GameObject mainPausePanel;
     public GameObject settingsPanel;
 
@@ -56,6 +56,23 @@ public class PauseMenuController : MonoBehaviour
         }
     }
 
+    // Logic for display.
+    public void OpenPauseMenu()
+    {
+        // Last line of "security" check that we ARE infact in the gameScene.
+        if (PersistentMenuManager.Instance.pauseMenuPrefab != null)
+        {
+            ShowPauseMenu();
+        }
+        else
+        {
+            Debug.Log(
+                "Cannot open pauseMenu, not currently in gameScene.\n"
+                    + "Error thrown from OpenPauseMenu method in PersistentMenuManager.cs!"
+            );
+        }
+    }
+
     public void OpenSettings()
     {
         Debug.Log("[PauseMenuController] Settings button clicked");
@@ -64,6 +81,7 @@ public class PauseMenuController : MonoBehaviour
         MenuManager.Instance.OpenSettingsMenu("PauseMenu");
     }
 
+    // --- REDUNDANT ---
     // Helper method for display logic.
     private void ShowSettingPanel()
     {
@@ -127,10 +145,9 @@ public class PauseMenuController : MonoBehaviour
     {
         Debug.Log("[PauseMenuController] Closing settings");
 
-        // Show main pause panel, hide settings panel.
-        if (settingsPanel != null)
-            settingsPanel.SetActive(false);
-        if (mainPausePanel != null)
-            mainPausePanel.SetActive(true);
+        if (SettingsMenuController.Instance != null)
+        {
+            SettingsMenuController.Instance.CloseSettings();
+        }
     }
 }

@@ -34,13 +34,12 @@ public class MainMenuManager : MonoBehaviour
 
     // --- MainMenu-specific methods. ---
 
-    // Shows main menu.
+    // Show mainMenu.
     public void ShowMainMenu()
     {
-        if (currentMainMenuInstance != null)
+        if (MainMenuController.Instance != null)
         {
-            currentMainMenuInstance.SetActive(true);
-            Debug.Log("Should be showing MainMenu now.");
+            MainMenuController.Instance.ShowMainMenu();
         }
     }
 

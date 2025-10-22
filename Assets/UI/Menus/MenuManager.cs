@@ -154,10 +154,12 @@ public class MenuManager : MonoBehaviour
     {
         if (settingsMenuCanvas != null)
         {
-            // REDUNDANT - Display logic for settings; SettingsMenuController.cs
-            settingsMenuCanvas.SetActive(false);
+            if (SettingsMenuController.Instance != null)
+            {
+                SettingsMenuController.Instance.closeSettingsDisplay();
+            }
         }
-        // Close the setting menu first.
+        // Caching the SettingsMenu.
         PersistentMenuManager.Instance.CloseMenu("SettingsMenu");
 
         // Return to parent menu based on stored context.
@@ -166,16 +168,16 @@ public class MenuManager : MonoBehaviour
             // Handle MainMenu display logic.
             currentMenuState = MenuState.MainMenu;
             // Asking MainMenuManager to show mainMenu.
-            if (MainMenuManager.Instance != null)
+            if (MainMenuController.Instance != null)
             {
-                MainMenuManager.Instance.ShowMainMenu();
+                MainMenuController.Instance.ShowMainMenu();
             }
         }
         else if (settingsParentMenu == "PauseMenu")
         {
             currentMenuState = MenuState.PauseMenu;
             // Handle PauseMenu display logic.
-            if (PersistentMenuManager.doesGameMenuExist("PauseMenu"))
+            if (PersistentMenuManager.Instance.doesGameMenuExist("PauseMenu"))
             {
                 PersistentMenuManager.Instance.OpenMenu("PauseMenu");
             }
