@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -25,6 +26,8 @@ public class EnemyBehavior : MonoBehaviour
     [SerializeField] private float baseContactDistance = 0.75f;
     [Tooltip("NavMesh sample radius used for SetDestination safety.")]
     [SerializeField] private float navSampleRadius = 1.0f;
+    [SerializeField] private Transform targetAnchor;
+
 
     [Header("Navigation Targets")]
     [Tooltip("Where the enemy marches when not pursuing the player.")]
@@ -33,6 +36,17 @@ public class EnemyBehavior : MonoBehaviour
     [SerializeField] private string strongholdTag = "Base";
     [Tooltip("Optional anchor (e.g. invisible child) representing the player's detection point.")]
     [SerializeField] private Transform playerDetectionTarget;
+
+    // this is will be used for gold when enemies die
+    [Header("Rewards")]
+    public int goldReward = 1;
+    public int bossGoldReward = 5;
+
+    [Header("Coin Drop (visual only)")]
+    public GameObject coinPrefab;
+  
+
+
 
     private int currentHealth;
     private Transform player;
@@ -59,8 +73,8 @@ public class EnemyBehavior : MonoBehaviour
     public void Initialize(EnemyType enemyType)
     {
         maxHealth = enemyType.health;
-        moveSpeed = enemyType.speed;
-        damage = enemyType.damage;
+        moveSpeed = enemyType.speed * PlayerPrefs.GetFloat("enemyDMG", 1f);
+        damage = (int)Math.Floor(enemyType.damage * PlayerPrefs.GetFloat("enemyDMG", 1f)); ;
         isBoss = enemyType.isBoss;
         lootTableName = enemyType.lootTableName;
         lootDropChance = enemyType.lootDropChance;
@@ -85,6 +99,16 @@ public class EnemyBehavior : MonoBehaviour
         }
 
         AddVisualRepresentation();
+    }
+
+    void Awake()
+    {
+        if (targetAnchor == null)
+        {
+            var go = GameObject.FindWithTag("PlayerAnchor");
+            if (go) targetAnchor = go.transform;
+            else Debug.LogWarning("EnemyBehavior: No object tagged 'PlayerAnchor' found.");
+        }
     }
 
     void AddVisualRepresentation()
@@ -171,6 +195,8 @@ public void TakeDamage(int amount)
     }
 
     int finalDamage = Mathf.RoundToInt(amount * damageTakenMultiplier * playerDamageMultiplier);
+    // Report hit to DailyTaskManager
+    DailyTaskManager.Instance?.OnEnemyTakeDamage();
 
     currentHealth -= finalDamage;
     StartCoroutine(DamageFlash());
@@ -195,22 +221,49 @@ public void TakeDamage(int amount)
     }
 
     void Die()
+{
+    if (isDead) return;
+    isDead = true;
+
+    if (agent) agent.enabled = false;
+    var col = GetComponent<Collider>();
+    if (col) col.enabled = false;
+
+    try
     {
-        isDead = true;
-        if (agent) agent.enabled = false;
-        var col = GetComponent<Collider>(); if (col) col.enabled = false;
+        // Award XP
+        Leveling lvl = null;
+        if (targetAnchor) lvl = targetAnchor.GetComponentInParent<Leveling>();
+        if (lvl != null) lvl.AddExperience(isBoss ? 100f : 5f);
 
-        // Reward player
-        var lvl = player ? player.GetComponent<Leveling>() : null;
-        if (lvl) lvl.AddExperience(isBoss ? 100f : 5f);
+        // Meta kill stats
+        var meta = MetaProgression.Instance;
+        if (meta != null) meta.KillEnemy(gameObject.name, isBoss);
 
-        if (MetaProgression.Instance != null)
-            MetaProgression.Instance.KillEnemy(gameObject.name, isBoss);
+        // Report kill to DailyTaskManager
+        DailyTaskManager.Instance?.OnEnemyKilled();
 
+        // Visual coin drop (optional cosmetic)
+        if (coinPrefab != null)
+        {
+            Vector3 spawnPos = transform.position + Vector3.up * 0.25f;
+            var go = Instantiate(coinPrefab, spawnPos, Quaternion.identity);
+            var vis = go.GetComponent<CoinPickupVisual>();
+            if (vis != null) vis.Initialize(targetAnchor);
+        }
+
+        // Gold payout
+        if (GoldService.Instance != null)
+            GoldService.Instance.Add(isBoss ? bossGoldReward : goldReward);
+    }
+    finally
+    {
         OnDeath?.Invoke(gameObject);
-
         Destroy(gameObject);
     }
+}
+
+
 
     // ----------------- Helpers -----------------
     void SetSafeDestination(Vector3 worldPos)
