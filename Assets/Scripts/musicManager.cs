@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class musicManager : MonoBehaviour
 {
-    public boolean debug = false;
+    public bool debug = false;
     [Header("Music Sources")]
     public float fadeSpeed = 2f;
     public AudioSource calmMusic;
