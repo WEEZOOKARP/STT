@@ -64,7 +64,7 @@ public class Gun : MonoBehaviour
                 Vector3 aimDir = Camera.main.transform.forward;
                 TryShoot(aimDir);
 
-                // 🔊 start looping sound if set
+                // start looping sound if set
                 if (!isLoopPlaying && rifleLoopSound)
                 {
                     gunSound.clip = rifleLoopSound;
@@ -75,7 +75,7 @@ public class Gun : MonoBehaviour
             }
             else
             {
-                // 🔊 stop looping sound if playing
+                // stop looping sound if playing
                 if (isLoopPlaying)
                 {
                     gunSound.Stop();

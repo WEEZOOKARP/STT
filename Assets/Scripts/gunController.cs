@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 public class GunController : MonoBehaviour
 {
@@ -54,15 +55,8 @@ public class GunController : MonoBehaviour
         }
     }
 
-    void Update() // Added by Archie - [26/09/25] - Purpose: Log the currentGun state.
+    void Update()
     {
-        Debug.Log(
-            $"[GunController] Update() - currentGun is {(currentGun == null ? "NULL" : "NOT NULL")}"
-        );
-
-        // if (currentGun == null)
-        //     return;
-
         HandleInput();
         HandleAiming();
     }
@@ -76,13 +70,25 @@ public class GunController : MonoBehaviour
     {
         if (testOnPC)
         {
-            if (Mouse.current.leftButton.isPressed && canShoot)
+            // Check if current gun allows automatic fire
+            bool isAutomatic = currentGun != null && currentGun.allowAutomaticFire;
+
+            if (isAutomatic)
             {
-                TryShoot();
-                canShoot = false;
+                // Automatic: fire while held
+                if (Mouse.current.leftButton.isPressed)
+                {
+                    TryShoot();
+                }
             }
-            if (!Mouse.current.leftButton.isPressed)
-                canShoot = true;
+            else
+            {
+                // Semi-auto: fire once per click
+                if (Mouse.current.leftButton.wasPressedThisFrame)
+                {
+                    TryShoot();
+                }
+            }
 
             // Z key reload only works in PC mode
             if (Keyboard.current.zKey.wasPressedThisFrame)
@@ -94,21 +100,37 @@ public class GunController : MonoBehaviour
 
             var touch = Touchscreen.current.primaryTouch;
 
-            // Shooting
-            if (touch.press.isPressed && canShoot)
+            // Check if touch is over UI element such as reload button.
+            bool isTouchOverUI = EventSystem.current != null &&
+                                EventSystem.current.IsPointerOverGameObject(touch.touchId.ReadValue());
+
+            // Check if current gun allows automatic fire
+            bool isAutomatic = currentGun != null && currentGun.allowAutomaticFire;
+
+            //  Automatic or semi-auto shooting based on gun settings
+            if (isAutomatic)
             {
-                TryShoot();
-                canShoot = false;
+                // Automatic: fire while screen is pressed
+                if (touch.press.isPressed && !isTouchOverUI)
+                {
+                    TryShoot();
+                }
             }
-            if (!touch.press.isPressed)
-                canShoot = true;
+            else
+            {
+                // Semi-auto: fire once per tap
+                if (touch.press.wasPressedThisFrame && !isTouchOverUI)
+                {
+                    TryShoot();
+                }
+            }
 
             // Swipe detection
-            if (touch.press.wasPressedThisFrame)
+            if (touch.press.wasPressedThisFrame && !isTouchOverUI)
             {
                 touchStartPos = touch.position.ReadValue();
             }
-            if (touch.press.wasReleasedThisFrame)
+            if (touch.press.wasReleasedThisFrame && !isTouchOverUI)
             {
                 touchEndPos = touch.position.ReadValue();
                 DetectSwipe();
@@ -128,11 +150,10 @@ public class GunController : MonoBehaviour
             xRotation -= mouseY;
             xRotation = Mathf.Clamp(xRotation, -80f, 80f);
 
-            //playerCamera.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f); // pitch
-            // cameraParent.Rotate(Vector3.up * mouseX);                                   // yaw
+            yRotation += mouseX;
 
-            playerCamera.transform.localRotation = Quaternion.Euler(xRotation, yRotation, 0f);// changed this so it apply both pitch and yaw to the camera locally (do NOT rotate cameraParent)
-
+            // Apply both pitch and yaw to the camera locally (do NOT rotate cameraParent)
+            playerCamera.transform.localRotation = Quaternion.Euler(xRotation, yRotation, 0f);
         }
         else
         {
@@ -146,23 +167,15 @@ public class GunController : MonoBehaviour
         }
     }
 
-    private void TryShoot() // Added by Archie - [26/09/25] - Purpose: Log the currentGun state.
+    private void TryShoot()
     {
-        Debug.Log("[GunController] TryShoot() called");
-
         if (currentGun != null)
         {
-            Debug.Log("[GunController] currentGun exists, shooting!");
             currentGun.TryShoot(playerCamera.transform.forward);
-        }
-        else
-        {
-            Debug.Log("[GunController] No gun, but firing event for tutorial");
         }
 
         // Always fire the event for tutorial purposes
         OnShotFired?.Invoke();
-        Debug.Log("[GunController] OnShotFired event invoked");
     }
 
     private void ReloadWeapon()
@@ -173,18 +186,18 @@ public class GunController : MonoBehaviour
         OnReloadStarted?.Invoke(); // Invoking event for tutorial condition subscribed to reload event - Archie | [25/09/25].
     }
 
-   public void EnableGun(bool enable)
-   {
-       this.enabled = enable; // Enable or disable the whole GunController script
+    public void EnableGun(bool enable)
+    {
+        this.enabled = enable; // Enable or disable the whole GunController script
 
-       // Toggle reload button visibility (only visible when enabled AND not in PC mode)
-       if (reloadButton != null)
-       {
-           reloadButton.gameObject.SetActive(enable && !testOnPC);
-       }
-   }
+        // Toggle reload button visibility (only visible when enabled AND not in PC mode)
+        if (reloadButton != null)
+        {
+            reloadButton.gameObject.SetActive(enable && !testOnPC);
+        }
+    }
 
-   private void DetectSwipe()
+    private void DetectSwipe()
     {
         Vector2 swipe = touchEndPos - touchStartPos;
 
@@ -194,7 +207,7 @@ public class GunController : MonoBehaviour
             if (swipe.x > 0)
                 SwitchWeapon(1);  // Swipe right change to next weapon
             else
-                SwitchWeapon(-1); // Swipe left chack back to previous weapon
+                SwitchWeapon(-1); // Swipe left change back to previous weapon
         }
     }
 
