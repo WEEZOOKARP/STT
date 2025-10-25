@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class GunController : MonoBehaviour
 {
@@ -17,6 +18,7 @@ public class GunController : MonoBehaviour
     public Transform cameraParent; // Player root used for yaw
     public Gun[] weapons;               // Array of weapons to switch
     private Gun currentGun;             // Active gun
+    public Button reloadButton;         // UI Button for reloading on mobile
 
     [Header("Swipe Settings")]
     public float minSwipeDistance = 50f; // Minimum pixels for a swipe
@@ -41,6 +43,14 @@ public class GunController : MonoBehaviour
         if (weapons.Length > 0)
         {
             SetCurrentGun(weapons[0]);
+        }
+
+        // Setup reload button
+        if (reloadButton != null)
+        {
+            reloadButton.onClick.AddListener(ReloadWeapon);
+            // Show/hide button based on platform
+            reloadButton.gameObject.SetActive(!testOnPC);
         }
     }
 
@@ -74,6 +84,7 @@ public class GunController : MonoBehaviour
             if (!Mouse.current.leftButton.isPressed)
                 canShoot = true;
 
+            // Z key reload only works in PC mode
             if (Keyboard.current.zKey.wasPressedThisFrame)
                 ReloadWeapon();
         }
@@ -102,6 +113,8 @@ public class GunController : MonoBehaviour
                 touchEndPos = touch.position.ReadValue();
                 DetectSwipe();
             }
+
+            // Reload button handles reloading on mobile, no keyboard input
         }
     }
 
@@ -163,6 +176,12 @@ public class GunController : MonoBehaviour
    public void EnableGun(bool enable)
    {
        this.enabled = enable; // Enable or disable the whole GunController script
+
+       // Toggle reload button visibility (only visible when enabled AND not in PC mode)
+       if (reloadButton != null)
+       {
+           reloadButton.gameObject.SetActive(enable && !testOnPC);
+       }
    }
 
    private void DetectSwipe()
@@ -173,9 +192,9 @@ public class GunController : MonoBehaviour
         if (Mathf.Abs(swipe.x) > Mathf.Abs(swipe.y) && swipe.magnitude >= minSwipeDistance)
         {
             if (swipe.x > 0)
-                SwitchWeapon(1);  // Swipe right -> next weapon
+                SwitchWeapon(1);  // Swipe right change to next weapon
             else
-                SwitchWeapon(-1); // Swipe left -> previous weapon
+                SwitchWeapon(-1); // Swipe left chack back to previous weapon
         }
     }
 
@@ -190,5 +209,14 @@ public class GunController : MonoBehaviour
         if (currentWeaponIndex < 0) currentWeaponIndex = weapons.Length - 1;
 
         SetCurrentGun(weapons[currentWeaponIndex]);
+    }
+
+    void OnDestroy()
+    {
+        // Clean up button listener
+        if (reloadButton != null)
+        {
+            reloadButton.onClick.RemoveListener(ReloadWeapon);
+        }
     }
 }
