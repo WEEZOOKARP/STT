@@ -254,6 +254,8 @@ public class WaveManager : MonoBehaviour
         Debug.Log($"[WaveManager] StartNextWave() -> wave {currentWave}");
         if (currentWave > maxWaves) { OnAllWavesComplete?.Invoke(); return; }
         buildPhaseActive = false;
+        musicManager mm = FindObjectOfType<musicManager>();
+        mm.beginPlay("Battle");
         currentWaveCoroutine = StartCoroutine(RunWave(currentWave));
     }
 
@@ -318,9 +320,10 @@ public class WaveManager : MonoBehaviour
     // ---------- BUILD PHASE CONTROL (NEW) ----------
     public void StartBuildPhase()
     {
+        musicManager mm = FindObjectOfType<musicManager>();
         buildPhaseActive = true;
         isWaveActive = false;
-
+        mm.beginPlay("Calm");
         // fire the event (keeps things decoupled if you use it)
         OnBuildPhaseStarted?.Invoke(currentWave);
 
