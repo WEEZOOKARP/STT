@@ -15,25 +15,28 @@
  */
 
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class MainMenuController : MonoBehaviour
 {
     [Header("Scene Configuration")]
     public string gameSceneName = "Game";
-    
+
+    [Header("Main Menu Panel(s)")]
+    public GameObject mainMenuPanel;
+
     [Header("Main Menu Buttons")]
     public Button playButton;
     public Button tutorialButton;
     public Button settingsButton;
     public Button quitButton;
-    
+
     [Header("Tutorial Integration")]
     public GameObject tutorialReplayPanel;
     public Button confirmTutorialButton;
     public Button cancelTutorialButton;
-    
+
     void Start()
     {
         // Wire up main menu buttons.
@@ -45,36 +48,34 @@ public class MainMenuController : MonoBehaviour
             settingsButton.onClick.AddListener(OpenSettings);
         if (quitButton != null)
             quitButton.onClick.AddListener(QuitGame);
-            
+
         // Wire up tutorial replay buttons
         if (confirmTutorialButton != null)
             confirmTutorialButton.onClick.AddListener(StartTutorialReplay);
         if (cancelTutorialButton != null)
             cancelTutorialButton.onClick.AddListener(HideTutorialOptions);
-            
+
         // Hide tutorial panel initially
         if (tutorialReplayPanel != null)
             tutorialReplayPanel.SetActive(false);
     }
-    
-    
+
     // Starts the game - tutorial will auto-start if needed.
-    
+
     public void PlayGame()
     {
         Debug.Log("[MainMenuController] Play button clicked - loading game scene");
-        
+
         // Load game scene - GameManager will handle tutorial check.
         SceneManager.LoadScene(gameSceneName);
     }
-    
-    
+
     // Shows tutorial replay options.
-    
+
     public void ShowTutorialOptions()
     {
         Debug.Log("[MainMenuController] Tutorial button clicked");
-        
+
         if (tutorialReplayPanel != null)
         {
             tutorialReplayPanel.SetActive(true);
@@ -85,21 +86,19 @@ public class MainMenuController : MonoBehaviour
             StartTutorialReplay();
         }
     }
-    
-    
+
     // Hides tutorial replay options.
-    
+
     public void HideTutorialOptions()
     {
         Debug.Log("[MainMenuController] Tutorial options cancelled");
-        
+
         if (tutorialReplayPanel != null)
         {
             tutorialReplayPanel.SetActive(false);
         }
     }
-    
-    
+
     // Forces tutorial replay by resetting progress and loading game.
     public void StartTutorialReplay()
     {
@@ -112,34 +111,65 @@ public class MainMenuController : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[MainMenuController] TutorialManager not found - tutorial may not replay properly");
+            Debug.LogWarning(
+                "[MainMenuController] TutorialManager not found - tutorial may not replay properly"
+            );
         }
-        
+
         // Load game scene - tutorial will now start automatically.
         SceneManager.LoadScene(gameSceneName);
     }
-    
-    
-    // Opens the settings menu.
-    public void OpenSettings()
-    {
-        Debug.Log("[MainMenuController] Settings button clicked");
-        
-        // TODO: Implement settings menu.
-        // For now, just show a placeholder message.
-        Debug.Log("Settings menu - Coming soon!");
-    }
-    
-    
+
     // Quits the application.
     public void QuitGame()
     {
         Debug.Log("[MainMenuController] Quit button clicked");
-        
-        #if UNITY_EDITOR
+
+#if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
-        #else
+#else
         Application.Quit();
-        #endif
+#endif
+    }
+
+    // Hides the mainMenu.
+    private void HideMainMenu()
+    {
+        if (mainMenuPanel != null)
+        {
+            mainMenuPanel.SetActive(false);
+        }
+    }
+
+    // Shows the mainMenu.
+    private void ShowMainMenu()
+    {
+        if (mainMenuPanel != null)
+        {
+            mainMenuPanel.SetActive(true);
+        }
+    }
+
+    // Opens the settings menu.
+    public void OpenSettings()
+    {
+        Debug.Log("[MainMenuController] Settings button clicked");
+
+        // Calling ShowSettings from MainMenuManager.
+        if (MainMenuManager.Instance != null)
+        {
+            MainMenuManager.Instance.ShowSettings();
+        }
+    }
+
+    // Closes settings and returns to mainMenu.
+    public void CloseSettings()
+    {
+        Debug.Log("[MainMenuController] Closing settings.");
+
+        if (SettingsMenuController.Instance != null)
+        {
+            SettingsMenuController.Instance.CloseSettings();
+        }
     }
 }

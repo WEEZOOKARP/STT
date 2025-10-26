@@ -8,6 +8,16 @@ public class TutorialUI : MonoBehaviour
 
     void Start()
     {
+        // Future event subscription - for handling further step changes.
+        TutorialManager.OnStepStarted += OnStepStarted;
+        TutorialManager.OnTutorialCompleted += OnTutorialCompleted;
+        
+        // Use Invoke to check state after all Start() methods have run.
+        Invoke(nameof(CheckInitialState), 0.1f);
+    }
+    
+    void CheckInitialState()
+    {
         // Immediately checking state.
         // Handling case where the tutorial has already started.
         if (TutorialManager.Instance != null)
@@ -19,22 +29,29 @@ public class TutorialUI : MonoBehaviour
                 OnStepStarted(TutorialManager.Instance.currentStep);
             }
         }
-
-        // Future event subscription - for handling further step changes.
-        TutorialManager.OnStepStarted += OnStepStarted;
-        TutorialManager.OnTutorialCompleted += OnTutorialCompleted;
     }
 
     void OnStepStarted(TutorialStep step)
     {
-        if (step != null && instructionText != null)
+        if (step == null)
         {
-            instructionText.text = step.instructionText;
+            Debug.LogError("Tutorial step is null.");
+            return;
         }
-        else
+        
+        if (instructionText == null)
         {
-            Debug.LogError("Tutorial step is null or instruction text is null.");
+            Debug.LogError("Instruction text UI component is null.");
+            return;
         }
+        
+        if (string.IsNullOrEmpty(step.instructionText))
+        {
+            Debug.LogError($"Tutorial step '{step.stepName}' has empty instruction text.");
+            return;
+        }
+        
+        instructionText.text = step.instructionText;
 
         if (tutorialPanel != null)
         {

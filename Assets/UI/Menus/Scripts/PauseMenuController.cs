@@ -25,11 +25,11 @@ public class PauseMenuController : MonoBehaviour
     public Button tutorialButton;
     public Button mainMenuButton;
     public Button quitButton;
-    
-    [Header("Menu Panels")]
+
+    [Header("Pause Menu Panels")]
     public GameObject mainPausePanel;
     public GameObject settingsPanel;
-    
+
     void Start()
     {
         // Wire up button events
@@ -44,84 +44,110 @@ public class PauseMenuController : MonoBehaviour
         if (quitButton != null)
             quitButton.onClick.AddListener(QuitGame);
     }
-    
-    /// <summary>
-    /// Resumes the game and closes the pause menu
-    /// </summary>
+
+    // Resumes the game and closes the pause menu.
     public void ResumeGame()
     {
         Debug.Log("[PauseMenuController] Resume button clicked");
-        
+
         if (MenuManager.Instance != null)
         {
             MenuManager.Instance.ClosePauseMenu();
         }
     }
-    
-    /// <summary>
-    /// Opens the settings submenu
-    /// </summary>
+
+    // Logic for display.
+    public void OpenPauseMenu()
+    {
+        // Last line of "security" check that we ARE infact in the gameScene.
+        if (PersistentMenuManager.Instance.pauseMenuPrefab != null)
+        {
+            ShowPauseMenu();
+        }
+        else
+        {
+            Debug.Log(
+                "Cannot open pauseMenu, not currently in gameScene.\n"
+                    + "Error thrown from OpenPauseMenu method in PersistentMenuManager.cs!"
+            );
+        }
+    }
+
     public void OpenSettings()
     {
         Debug.Log("[PauseMenuController] Settings button clicked");
-        
-        // Hide main pause panel, show settings panel
+
+        // Controller calling MenuManager for business logic.
+        MenuManager.Instance.OpenSettingsMenu("PauseMenu");
+    }
+
+    // --- REDUNDANT ---
+    // Helper method for display logic.
+    private void ShowSettingPanel()
+    {
+        // Hide main pause panel, show settings panel.
         if (mainPausePanel != null)
             mainPausePanel.SetActive(false);
         if (settingsPanel != null)
             settingsPanel.SetActive(true);
     }
-    
-    /// <summary>
-    /// Shows tutorial overlay for menu explanation
-    /// </summary>
+
+    private void HidePauseMenu()
+    {
+        if (mainPausePanel != null)
+        {
+            mainPausePanel.SetActive(false);
+        }
+    }
+
+    private void ShowPauseMenu()
+    {
+        if (mainPausePanel != null)
+        {
+            mainPausePanel.SetActive(true);
+        }
+    }
+
     public void ShowTutorial()
     {
         Debug.Log("[PauseMenuController] Tutorial button clicked");
-        
+
         if (MenuManager.Instance != null)
         {
             MenuManager.Instance.ShowTutorialOverlay();
         }
     }
-    
-    /// <summary>
-    /// Returns to the main menu scene
-    /// </summary>
+
+    // Returning to mainMenu.
     public void ReturnToMainMenu()
     {
         Debug.Log("[PauseMenuController] Main Menu button clicked");
-        
+
         if (MenuManager.Instance != null)
         {
             MenuManager.Instance.ReturnToMainMenu();
         }
     }
-    
-    /// <summary>
-    /// Quits the application
-    /// </summary>
+
+    // Quits the application.
     public void QuitGame()
     {
         Debug.Log("[PauseMenuController] Quit button clicked");
-        
+
         if (MenuManager.Instance != null)
         {
             MenuManager.Instance.QuitGame();
         }
     }
-    
-    /// <summary>
-    /// Closes settings and returns to main pause menu
-    /// </summary>
+
+    // Closes settings and returns to main pause menu.
     public void CloseSettings()
     {
         Debug.Log("[PauseMenuController] Closing settings");
-        
-        // Show main pause panel, hide settings panel
-        if (settingsPanel != null)
-            settingsPanel.SetActive(false);
-        if (mainPausePanel != null)
-            mainPausePanel.SetActive(true);
+
+        if (SettingsMenuController.Instance != null)
+        {
+            SettingsMenuController.Instance.CloseSettings();
+        }
     }
 }

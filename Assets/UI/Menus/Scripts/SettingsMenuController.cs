@@ -65,17 +65,15 @@ public class SettingsMenuController : MonoBehaviour
         // to apply settings (or not) before exiting to parent menu.
     }
 
-    public void OpenSettingsMenu()
+    public void OpenSettingsMenu() 
     {
-        if (settingsPanel != null)
-        {
+        if (settingsPanel != null) {
             openSettingsDisplay();
         }
     }
 
     // Private helper method to open settings display.
-    public void openSettingsDisplay()
-    {
+    public void openSettingsDisplay() {
         settingsPanel.SetActive(true);
     }
 
@@ -102,22 +100,10 @@ public class SettingsMenuController : MonoBehaviour
         Debug.Log("[SettingsMenuController] Apply Settings changes button clicked.");
         // TODO: Implement so that settings changes are saved, applied and reflected in
         // SettingsMenu's UI. Importantly, this does not
-
-        // Saving settings when Apply button is clicked.
-        if (SettingsManager.Instance != null)
-        {
-            SettingsManager.Instance.SaveSettings();
-            Debug.Log("Settings saved successfully!");
-        }
     }
 
     public void MuteSound()
     {
         Debug.Log("[SettingsMenuController] Mute sound button clicked.");
-        if (SettingsManager.Instance != null)
-        {
-            SettingsManager.Instance.MuteSound();
-            Debug.Log("Muted sound successfully!");
-        }
     }
 }

@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: Step2_Reload
   m_EditorClassIdentifier: 
   stepName: Learning to reload!
-  stepOrder: 0
+  stepOrder: 2
   instructionText: Press 'Z' to reload your weapon!
   instructionImage: {fileID: 0}
   requiresARInteraction: 0
   spatialPosition: {x: 0, y: 0, z: 0}
   useWorldSpaceUI: 0
-  completionCondition: {fileID: 11400000, guid: c9a51d4d0313933448196b1b307d5494, type: 2}
+  completionCondition: {fileID: 11400000, guid: 9ceeb540cad1d5b48b0d342075402917, type: 2}
   timeoutDuration: 30
   uiPrefab: {fileID: 0}
   showProgressBar: 0
