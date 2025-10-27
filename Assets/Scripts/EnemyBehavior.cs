@@ -45,9 +45,6 @@ public class EnemyBehavior : MonoBehaviour
     [Header("Coin Drop (visual only)")]
     public GameObject coinPrefab;
   
-
-
-
     private int currentHealth;
     private Transform player;
     private NavMeshAgent agent;
@@ -81,6 +78,7 @@ public class EnemyBehavior : MonoBehaviour
         bossLootTableName = enemyType.bossLootTableName;
 
         currentHealth = maxHealth;
+        baseMoveSpeed = moveSpeed; // Store base speed for multiplier calculations
 
         TryCachePlayer();
         AutoAssignStronghold();
@@ -163,7 +161,7 @@ public class EnemyBehavior : MonoBehaviour
         // Base contact fallback (scores a hit even if the agent stops a hair short)
         if (strongholdTarget && distToBase <= baseContactDistance)
         {
-            DamageStronghold(1); // your forwarder to the stronghold’s TakeDamage
+            DamageStronghold(1); // your forwarder to the stronghold's TakeDamage
             Die();               // kamikaze behaviour when they reach the base
             return;
         }
@@ -183,28 +181,27 @@ public class EnemyBehavior : MonoBehaviour
         if (playerStatus) playerStatus.TakeDamage(damage);
     }
 
-public void TakeDamage(int amount)
-{
-    if (isDead) return;
-    var lvl = player ? player.GetComponent<Leveling>() : null;
-
-    float playerDamageMultiplier = 1f;
-    if (lvl != null && lvl.playerStats != null)
+    public void TakeDamage(int amount)
     {
-        playerDamageMultiplier = lvl.playerStats.GetPlayerMultipliers().Damage;
+        if (isDead) return;
+        var lvl = player ? player.GetComponent<Leveling>() : null;
+
+        float playerDamageMultiplier = 1f;
+        if (lvl != null && lvl.playerStats != null)
+        {
+            playerDamageMultiplier = lvl.playerStats.GetPlayerMultipliers().Damage;
+        }
+
+        int finalDamage = Mathf.RoundToInt(amount * damageTakenMultiplier * playerDamageMultiplier);
+        // Report hit to DailyTaskManager
+        DailyTaskManager.Instance?.OnEnemyTakeDamage();
+
+        currentHealth -= finalDamage;
+        StartCoroutine(DamageFlash());
+
+        if (currentHealth <= 0)
+            Die();
     }
-
-    int finalDamage = Mathf.RoundToInt(amount * damageTakenMultiplier * playerDamageMultiplier);
-    // Report hit to DailyTaskManager
-    DailyTaskManager.Instance?.OnEnemyTakeDamage();
-
-    currentHealth -= finalDamage;
-    StartCoroutine(DamageFlash());
-
-    if (currentHealth <= 0)
-        Die();
-}
-
 
     System.Collections.IEnumerator DamageFlash()
     {
@@ -221,49 +218,47 @@ public void TakeDamage(int amount)
     }
 
     void Die()
-{
-    if (isDead) return;
-    isDead = true;
-
-    if (agent) agent.enabled = false;
-    var col = GetComponent<Collider>();
-    if (col) col.enabled = false;
-
-    try
     {
-        // Award XP
-        Leveling lvl = null;
-        if (targetAnchor) lvl = targetAnchor.GetComponentInParent<Leveling>();
-        if (lvl != null) lvl.AddExperience(isBoss ? 100f : 5f);
+        if (isDead) return;
+        isDead = true;
 
-        // Meta kill stats
-        var meta = MetaProgression.Instance;
-        if (meta != null) meta.KillEnemy(gameObject.name, isBoss);
+        if (agent) agent.enabled = false;
+        var col = GetComponent<Collider>();
+        if (col) col.enabled = false;
 
-        // Report kill to DailyTaskManager
-        DailyTaskManager.Instance?.OnEnemyKilled();
-
-        // Visual coin drop (optional cosmetic)
-        if (coinPrefab != null)
+        try
         {
-            Vector3 spawnPos = transform.position + Vector3.up * 0.25f;
-            var go = Instantiate(coinPrefab, spawnPos, Quaternion.identity);
-            var vis = go.GetComponent<CoinPickupVisual>();
-            if (vis != null) vis.Initialize(targetAnchor);
+            // Award XP
+            Leveling lvl = null;
+            if (targetAnchor) lvl = targetAnchor.GetComponentInParent<Leveling>();
+            if (lvl != null) lvl.AddExperience(isBoss ? 100f : 5f);
+
+            // Meta kill stats
+            var meta = MetaProgression.Instance;
+            if (meta != null) meta.KillEnemy(gameObject.name, isBoss);
+
+            // Report kill to DailyTaskManager
+            DailyTaskManager.Instance?.OnEnemyKilled();
+
+            // Visual coin drop (optional cosmetic)
+            if (coinPrefab != null)
+            {
+                Vector3 spawnPos = transform.position + Vector3.up * 0.25f;
+                var go = Instantiate(coinPrefab, spawnPos, Quaternion.identity);
+                var vis = go.GetComponent<CoinPickupVisual>();
+                if (vis != null) vis.Initialize(targetAnchor);
+            }
+
+            // Gold payout
+            if (GoldService.Instance != null)
+                GoldService.Instance.Add(isBoss ? bossGoldReward : goldReward);
         }
-
-        // Gold payout
-        if (GoldService.Instance != null)
-            GoldService.Instance.Add(isBoss ? bossGoldReward : goldReward);
+        finally
+        {
+            OnDeath?.Invoke(gameObject);
+            Destroy(gameObject);
+        }
     }
-    finally
-    {
-        OnDeath?.Invoke(gameObject);
-        Destroy(gameObject);
-    }
-}
-
-
 
     // ----------------- Helpers -----------------
     void SetSafeDestination(Vector3 worldPos)
@@ -307,7 +302,7 @@ public void TakeDamage(int amount)
         return null;
     }
 
-    // -------- Stronghold damage passthrough (keeps your single source of truth) --------
+    //Stronghold damage passthrough (keeps your single source of truth)
     public void DamageStronghold(int amount)
     {
         // This assumes you already have the forwarder that calls stronghold.TakeDamage(...)
@@ -317,7 +312,7 @@ public void TakeDamage(int amount)
         if (sh) sh.TakeDamage(amount);
     }
 
-    // ----------------- Gizmos -----------------
+    // Gizmos
     void OnDrawGizmosSelected()
     {
         Gizmos.color = new Color(1f, 0.9f, 0f, 0.75f);
@@ -333,6 +328,8 @@ public void TakeDamage(int amount)
     {
         if (c.gameObject.CompareTag("Player")) AttackPlayer();
     }
+
+    // ----------------- Multiplier System -----------------
     public void ApplySpeedMultiplier(float mult)
     {
         speedMultiplier *= mult;
@@ -353,5 +350,30 @@ public void TakeDamage(int amount)
     public void ResetDamageMultiplier()
     {
         damageTakenMultiplier = 1f;
+    }
+
+    /// Applies special wave modifiers to this enemy instance.
+    /// Called by WaveManager when spawning enemies during special waves.
+    public void ApplyWaveModifiers(float healthMult, float damageMult, float speedMult, float lootBonus)
+    {
+        // Apply health multiplier
+        maxHealth = Mathf.RoundToInt(maxHealth * healthMult);
+        currentHealth = maxHealth; // Reset to new max health
+
+        // Apply damage multiplier
+        damage = Mathf.RoundToInt(damage * damageMult);
+
+        // Apply speed multiplier
+        moveSpeed *= speedMult;
+        baseMoveSpeed = moveSpeed; // Update base speed
+        if (agent != null)
+        {
+            agent.speed = moveSpeed * speedMultiplier; // Apply with existing multiplier
+        }
+
+        // Apply loot bonus
+        lootDropChance = Mathf.Min(1f, lootDropChance + lootBonus);
+
+        Debug.Log($"[EnemyBehavior] {gameObject.name} wave modifiers applied: HP={maxHealth}, DMG={damage}, SPD={moveSpeed:F1}, Loot={lootDropChance:F2}");
     }
 }
