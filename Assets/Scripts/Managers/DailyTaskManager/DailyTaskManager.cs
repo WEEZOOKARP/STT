@@ -173,7 +173,7 @@ public class DailyTaskManager : MonoBehaviour
            }
 
            // Award XP
-           Leveling lvl = FindObjectOfType<Leveling>();
+           Leveling lvl = FindFirstObjectByType<Leveling>();
            if (lvl != null)
            {
                lvl.AddExperience(rewardXP);

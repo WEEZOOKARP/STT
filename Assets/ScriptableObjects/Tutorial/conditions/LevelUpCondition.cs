@@ -8,7 +8,7 @@ public class LevelUpCondition : TutorialCondition
 
     public override bool IsConditionMet()
     {
-        Leveling levelingSystem = FindObjectOfType<Leveling>();
+        Leveling levelingSystem = FindFirstObjectByType<Leveling>();
         return levelingSystem != null && levelingSystem.level >= requiredLevel;
     }
 

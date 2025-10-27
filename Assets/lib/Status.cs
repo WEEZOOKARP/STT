@@ -68,10 +68,20 @@ public class Status : MonoBehaviour
 
     public void TakeDamage(int amount)
     {
+        TakeDamage(amount, null);
+    }
+
+    public void TakeDamage(int amount, Vector3? sourcePosition)
+    {
         playerHealth -= amount;
 
         // Debug message
         Debug.Log($"Player took {amount} damage! Current HP: {playerHealth}/{maxHealth}");
+
+        if (sourcePosition.HasValue && DamageIndicatorController.Instance != null)
+        {
+            DamageIndicatorController.Instance.ReportDamage(sourcePosition.Value, DamageIndicatorType.Player);
+        }
 
         if (playerHealth < 0)
         {
@@ -84,8 +94,9 @@ public class Status : MonoBehaviour
         }
     }
 
-    private void killPlayer(String cause)
+    private void killPlayer(string cause)
     {
-        bool isdead = true;
+        isdead = true;
+        Debug.Log($"Player died due to {cause}");
     }
 }

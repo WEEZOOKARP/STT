@@ -14,17 +14,45 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   factionName: Default
   enemies:
-  - displayName: enemy
-    prefab: {fileID: 1884482001846188409, guid: c8c3888dd02a5994da492cb85f62ca18, type: 3}
-    health: 10
-    speed: 1
-    damage: 1
+  - displayName: Enemy_Grunt
+    prefab: {fileID: 100000, guid: 17dde83c07094bbc8c82ae9c86fedf73, type: 3}
+    health: 60
+    speed: 3
+    damage: 10
     isBoss: 0
-    lootTableName: 
-    lootDropChance: 0
+    lootTableName: BasicEnemy
+    lootDropChance: 0.2
     bossLootTableName: 
-    spawnWeight: 0
+    spawnWeight: 1
     minWave: 1
     maxWave: 100
-    maxPerWave: 10
+    maxPerWave: -1
     difficultyCost: 1
+  - displayName: Enemy_Runner
+    prefab: {fileID: 200000, guid: 84a7cee9998e46ef9b4037b9556b1f3e, type: 3}
+    health: 40
+    speed: 6
+    damage: 8
+    isBoss: 0
+    lootTableName: BasicEnemy
+    lootDropChance: 0.15
+    bossLootTableName: 
+    spawnWeight: 0.7
+    minWave: 2
+    maxWave: 100
+    maxPerWave: 6
+    difficultyCost: 1
+  - displayName: Enemy_Commander
+    prefab: {fileID: 300000, guid: d93093175f0b4de99a917bc7ad5efe82, type: 3}
+    health: 120
+    speed: 2.5
+    damage: 20
+    isBoss: 0
+    lootTableName: BasicEnemy
+    lootDropChance: 0.35
+    bossLootTableName: 
+    spawnWeight: 0.35
+    minWave: 3
+    maxWave: 100
+    maxPerWave: 2
+    difficultyCost: 3

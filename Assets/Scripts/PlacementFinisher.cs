@@ -9,11 +9,11 @@ public class PlacementFinisher : MonoBehaviour
 
     public void ApplyAndStart()
     {
-        var wm = FindObjectOfType<WaveManager>();
+        var wm = FindFirstObjectByType<WaveManager>();
         if (!wm) { Debug.LogError("[PlacementFinisher] No WaveManager found."); return; }
 
         // Collect placed spawners (needs SpawnerMarker on the spawner prefab)
-        wm.spawnPoints = FindObjectsOfType<SpawnerMarker>()
+        wm.spawnPoints = FindObjectsByType<SpawnerMarker>(FindObjectsSortMode.None)
                          .Select(m => m.transform)
                          .ToArray();
         Debug.Log($"[PlacementFinisher] Spawn points set = {wm.spawnPoints.Length}");
