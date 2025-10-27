@@ -351,6 +351,16 @@ public class WaveManager : MonoBehaviour
 
     #region Wave Execution
     /// Executes a single wave from start to completion.
+    public void StartNextWave()
+    {
+        Debug.Log($"[WaveManager] StartNextWave() -> wave {currentWave}");
+        if (currentWave > maxWaves) { OnAllWavesComplete?.Invoke(); return; }
+        buildPhaseActive = false;
+        musicManager mm = FindObjectOfType<musicManager>();
+        mm.beginPlay("Battle");
+        currentWaveCoroutine = StartCoroutine(RunWave(currentWave));
+    }
+
     IEnumerator RunWave(int waveNumber)
     {
         Debug.Log($"[WaveManager] Running wave {waveNumber}");
@@ -406,6 +416,12 @@ public class WaveManager : MonoBehaviour
         RestoreOriginalEnemyStats();
         originalSpawnCounts.Clear();
         currentWaveModifier = null;
+        musicManager mm = FindObjectOfType<musicManager>();
+        buildPhaseActive = true;
+        isWaveActive = false;
+        mm.beginPlay("Calm");
+        // fire the event (keeps things decoupled if you use it)
+        OnBuildPhaseStarted?.Invoke(currentWave);
 
         Debug.Log($"[WaveManager] Wave {wave.waveNumber} cleanup complete.");
     }
