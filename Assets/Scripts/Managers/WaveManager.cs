@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.AI;
+using Unity.AI.Navigation;
 
 #region Data Classes
 [System.Serializable]
@@ -139,8 +141,8 @@ public class WaveManager : MonoBehaviour
     #endregion
 
     #region Properties
-    public int StrongholdCurrentHealth => stronghold ? stronghold.CurrentHealth : 0;
-    public int StrongholdMaxHealth => stronghold ? stronghold.MaxHealth : 0;
+    public int StrongholdCurrentHealth => TryResolveStronghold(out var strongholdRef) ? strongholdRef.CurrentHealth : 0;
+    public int StrongholdMaxHealth => TryResolveStronghold(out var strongholdRef) ? strongholdRef.MaxHealth : 0;
     #endregion
 
     #region Events
@@ -154,6 +156,7 @@ public class WaveManager : MonoBehaviour
     #region Unity Lifecycle
     void Awake()
     {
+        BuildNavMeshesIfNeeded();
         InitializeEnemyTypes();
     }
 
@@ -291,9 +294,9 @@ public class WaveManager : MonoBehaviour
         ResetState();
         currentWave = Mathf.Max(1, startingWave);
 
-        if (stronghold)
+        if (TryResolveStronghold(out var strongholdRef))
         {
-            stronghold.ResetHealth();
+            strongholdRef.ResetHealth();
         }
 
         StartNextWave();
@@ -339,7 +342,7 @@ public class WaveManager : MonoBehaviour
         Debug.Log($"[WaveManager] StartNextWave() -> wave {currentWave}");
         if (currentWave > maxWaves) { OnAllWavesComplete?.Invoke(); return; }
         buildPhaseActive = false;
-        musicManager mm = FindObjectOfType<musicManager>();
+        musicManager mm = FindFirstObjectByType<musicManager>();
         mm.beginPlay("Battle");
         currentWaveCoroutine = StartCoroutine(RunWave(currentWave));
     }
@@ -399,7 +402,7 @@ public class WaveManager : MonoBehaviour
         RestoreOriginalEnemyStats();
         originalSpawnCounts.Clear();
         currentWaveModifier = null;
-        musicManager mm = FindObjectOfType<musicManager>();
+        musicManager mm = FindFirstObjectByType<musicManager>();
         buildPhaseActive = true;
         isWaveActive = false;
         mm.beginPlay("Calm");
@@ -684,17 +687,27 @@ public class WaveManager : MonoBehaviour
 
         behavior.Initialize(enemyType);
 
-        // Apply special wave modifiers if active
         if (currentWaveModifier != null)
         {
             ApplyModifierToEnemy(behavior, currentWaveModifier);
         }
 
-        behavior.ConfigureTargets(strongholdTarget, ResolvePlayerAnchor());
+        behavior.ConfigureTargets(ResolveStrongholdAnchor(), ResolvePlayerAnchor());
         behavior.OnDeath -= OnEnemyDeath;
         behavior.OnDeath += OnEnemyDeath;
 
         activeEnemies.Add(enemy);
+    }
+
+    void BuildNavMeshesIfNeeded()
+    {
+        if (!Application.isPlaying) return;
+        var surfaces = FindObjectsByType<NavMeshSurface>(FindObjectsSortMode.None);
+        foreach (var surface in surfaces)
+        {
+            if (surface == null) continue;
+            surface.BuildNavMesh();
+        }
     }
 
     /// Gets a random spawn position from configured spawn points.
@@ -704,12 +717,12 @@ public class WaveManager : MonoBehaviour
         {
             int index = rng.Next(spawnPoints.Length);
             Transform spawnPoint = spawnPoints[index];
-            Vector3 offset = RandomPointInCircle(rng, spawnRadius);
-            offset.y = 0f;
-            return spawnPoint.position + offset;
+            return FindSpawnOnNavMesh(spawnPoint.position, rng);
         }
 
-        return RandomPointInCircle(rng, spawnRadius);
+        Transform strongholdAnchor = ResolveStrongholdAnchor();
+        Vector3 origin = strongholdAnchor ? strongholdAnchor.position : Vector3.zero;
+        return FindSpawnOnNavMesh(origin, rng, true);
     }
 
     /// Generates a random point within a circle.
@@ -723,6 +736,48 @@ public class WaveManager : MonoBehaviour
         double angle = rng.NextDouble() * Math.PI * 2.0;
         double distance = Math.Sqrt(rng.NextDouble()) * radius;
         return new Vector3((float)(Math.Cos(angle) * distance), 0f, (float)(Math.Sin(angle) * distance));
+    }
+
+    Vector3 FindSpawnOnNavMesh(Vector3 origin, System.Random rng, bool forceRing = false)
+    {
+        const int maxAttempts = 10;
+        Vector3 candidate = origin;
+
+        for (int attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            Vector3 offset = RandomPointInCircle(rng, spawnRadius);
+            if (forceRing || offset.sqrMagnitude < 9f)
+            {
+                Vector2 dir2 = new Vector2(offset.x, offset.z);
+                if (dir2.sqrMagnitude < 0.01f)
+                {
+                    double angle = rng.NextDouble() * Math.PI * 2.0;
+                    dir2 = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle));
+                }
+                dir2.Normalize();
+                float minDistance = Mathf.Max(spawnRadius * 0.6f, 6f);
+                offset = new Vector3(dir2.x, 0f, dir2.y) * minDistance;
+            }
+
+            candidate = origin + offset;
+            if (NavMesh.SamplePosition(candidate, out NavMeshHit hit, Mathf.Max(3f, spawnRadius + 6f), NavMesh.AllAreas))
+            {
+                return hit.position;
+            }
+
+            if (Physics.Raycast(candidate + Vector3.up * 10f, Vector3.down, out RaycastHit rayHit, 40f, ~0))
+            {
+                return rayHit.point;
+            }
+        }
+
+        if (NavMesh.SamplePosition(origin, out NavMeshHit originHit, Mathf.Max(5f, spawnRadius + 10f), NavMesh.AllAreas))
+        {
+            return originHit.position;
+        }
+
+        Debug.LogWarning($"[WaveManager] Failed to find NavMesh spawn near {origin}. Using last candidate {candidate}.");
+        return candidate;
     }
     #endregion
 
@@ -930,7 +985,7 @@ public class WaveManager : MonoBehaviour
         OnBuildPhaseStarted?.Invoke(currentWave);
 
         // Show build panel
-        var bpc = FindObjectOfType<BuildPhaseController>();
+        var bpc = FindFirstObjectByType<BuildPhaseController>();
         if (bpc != null)
         {
             bpc.ShowBuildPanel();
@@ -989,15 +1044,15 @@ public class WaveManager : MonoBehaviour
     {
         if (amount <= 0) return;
 
-        if (!stronghold)
+        if (!TryResolveStronghold(out var strongholdRef))
         {
             Debug.LogWarning("WaveManager: DamageStronghold called but no StrongholdHealth is assigned.");
             return;
         }
 
-        stronghold.TakeDamage(amount);
+        strongholdRef.TakeDamage(amount);
 
-        if (stronghold.CurrentHealth <= 0)
+        if (strongholdRef.CurrentHealth <= 0)
         {
             StopCurrentWave();
 
@@ -1034,6 +1089,64 @@ public class WaveManager : MonoBehaviour
         }
 
         return cachedPlayerAnchor;
+    }
+
+    Transform ResolveStrongholdAnchor()
+    {
+        if (strongholdTarget != null)
+        {
+            return strongholdTarget;
+        }
+
+        if (TryResolveStronghold(out var resolvedStronghold))
+        {
+            strongholdTarget = resolvedStronghold.transform;
+        }
+
+        return strongholdTarget;
+    }
+
+    bool TryResolveStronghold(out StrongholdHealth resolvedStronghold)
+    {
+        if (stronghold != null)
+        {
+            resolvedStronghold = stronghold;
+            return true;
+        }
+
+        if (strongholdTarget != null)
+        {
+            stronghold = strongholdTarget.GetComponent<StrongholdHealth>();
+            if (stronghold != null)
+            {
+                resolvedStronghold = stronghold;
+                return true;
+            }
+        }
+
+        StrongholdHealth foundStronghold = FindFirstObjectByType<StrongholdHealth>();
+        if (foundStronghold != null)
+        {
+            stronghold = foundStronghold;
+            strongholdTarget = foundStronghold.transform;
+            resolvedStronghold = stronghold;
+            return true;
+        }
+
+        GameObject taggedStronghold = GameObject.FindGameObjectWithTag("Base");
+        if (taggedStronghold != null)
+        {
+            strongholdTarget = taggedStronghold.transform;
+            stronghold = taggedStronghold.GetComponent<StrongholdHealth>();
+            if (stronghold != null)
+            {
+                resolvedStronghold = stronghold;
+                return true;
+            }
+        }
+
+        resolvedStronghold = null;
+        return false;
     }
 
     /// <summary>

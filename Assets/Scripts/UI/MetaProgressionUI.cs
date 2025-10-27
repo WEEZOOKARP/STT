@@ -34,7 +34,7 @@ public class MetaProgressionUI : MonoBehaviour
         metaProgression = MetaProgression.Instance;
         if (metaProgression == null)
         {
-            metaProgression = FindObjectOfType<MetaProgression>();
+            metaProgression = FindFirstObjectByType<MetaProgression>();
         }
         
         if (metaProgression != null)

@@ -12,7 +12,7 @@ public class waveBar : MonoBehaviour
     void Start()
     {
         // Find the wave manager
-        waveManager = FindObjectOfType<WaveManager>();
+        waveManager = FindFirstObjectByType<WaveManager>();
         
         if (waveManager != null)
         {

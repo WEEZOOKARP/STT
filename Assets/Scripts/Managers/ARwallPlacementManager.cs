@@ -51,13 +51,33 @@ public class ARWallPlacementManager : MonoBehaviour
     void OnValidate()
     {
         if (!arCamera) arCamera = Camera.main ? Camera.main : GetComponentInChildren<Camera>();
-        if (!raycastManager) raycastManager = GetComponent<ARRaycastManager>() ?? FindObjectOfType<ARRaycastManager>();
-        if (!planeManager) planeManager = GetComponent<ARPlaneManager>() ?? FindObjectOfType<ARPlaneManager>();
+        if (!raycastManager) raycastManager = GetComponent<ARRaycastManager>() ?? FindFirstObjectByType<ARRaycastManager>();
+        if (!planeManager) planeManager = GetComponent<ARPlaneManager>() ?? FindFirstObjectByType<ARPlaneManager>();
         selectedIndex = Mathf.Clamp(selectedIndex, 0, Mathf.Max(0, wallTypes.Count - 1));
     }
     void Awake() { OnValidate(); mpb = new MaterialPropertyBlock(); }
-    void OnEnable() { if (planeManager) planeManager.planesChanged += OnPlanesChanged; }
-    void OnDisable() { if (planeManager) planeManager.planesChanged -= OnPlanesChanged; }
+    void OnEnable()
+    {
+        if (!planeManager) return;
+#if UNITY_XR_ARFOUNDATION_6_0_OR_NEWER
+        planeManager.trackablesChanged += OnTrackablesChanged;
+#else
+#pragma warning disable CS0618
+        planeManager.planesChanged += OnPlanesChanged;
+#pragma warning restore CS0618
+#endif
+    }
+    void OnDisable()
+    {
+        if (!planeManager) return;
+#if UNITY_XR_ARFOUNDATION_6_0_OR_NEWER
+        planeManager.trackablesChanged -= OnTrackablesChanged;
+#else
+#pragma warning disable CS0618
+        planeManager.planesChanged -= OnPlanesChanged;
+#pragma warning restore CS0618
+#endif
+    }
 
     void Update()
     {
@@ -287,10 +307,24 @@ public class ARWallPlacementManager : MonoBehaviour
         }
     }
 
-    private void OnPlanesChanged(ARPlanesChangedEventArgs evt)
+#if UNITY_XR_ARFOUNDATION_6_0_OR_NEWER
+    private void OnTrackablesChanged(ARTrackablesChangedEventArgs<ARPlane> evt) => HandlePlaneRemovals(evt.removed);
+#else
+#pragma warning disable CS0618
+    private void OnPlanesChanged(ARPlanesChangedEventArgs evt) => HandlePlaneRemovals(evt.removed);
+#pragma warning restore CS0618
+#endif
+
+    private void HandlePlaneRemovals(System.Collections.Generic.IEnumerable<ARPlane> removed)
     {
-        foreach (var p in evt.removed)
-            occupied.Remove(p.trackableId);
+        if (removed == null) return;
+        foreach (var plane in removed)
+        {
+            if (plane != null)
+            {
+                occupied.Remove(plane.trackableId);
+            }
+        }
     }
 }
 

@@ -19,7 +19,7 @@ public class ReloadCondition : TutorialCondition
     {
         currentReloads = 0;
         isCompleted = false;
-        GunController gunController = FindObjectOfType<GunController>();
+        GunController gunController = FindFirstObjectByType<GunController>();
         if (gunController != null)
         {
             GunController.OnReloadStarted += OnReloadPerformed;
@@ -28,7 +28,7 @@ public class ReloadCondition : TutorialCondition
 
     public override void StopCondition()
     {
-        GunController gunController = FindObjectOfType<GunController>();
+        GunController gunController = FindFirstObjectByType<GunController>();
         if (gunController != null)
         {
             GunController.OnReloadStarted -= OnReloadPerformed;

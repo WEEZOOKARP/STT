@@ -85,15 +85,30 @@ public class EnemyBehavior : MonoBehaviour
 
         agent = GetComponent<NavMeshAgent>();
         if (!agent) agent = gameObject.AddComponent<NavMeshAgent>();
-        agent.speed = moveSpeed;
+        agent.speed = Mathf.Max(0.5f, moveSpeed);
+        agent.angularSpeed = 720f;
+        agent.acceleration = Mathf.Max(4f, moveSpeed * 3f);
         agent.stoppingDistance = 0.15f; // lets them tuck in close
         agent.autoBraking = true;
+        agent.baseOffset = 0f;
+        agent.updateUpAxis = true;
+        agent.updateRotation = true;
 
         // Make sure we start on the NavMesh if spawned slightly off
         NavMeshHit hit;
-        if (NavMesh.SamplePosition(transform.position, out hit, 1.0f, NavMesh.AllAreas))
+        if (NavMesh.SamplePosition(transform.position, out hit, 5.0f, NavMesh.AllAreas))
         {
             agent.Warp(hit.position);
+            if (!agent.isOnNavMesh)
+            {
+                Debug.LogWarning($"[EnemyBehavior] {name} warped but is still off the NavMesh at {transform.position}. Check navmesh bake.");
+            }
+        }
+        else
+        {
+            Debug.LogError($"[EnemyBehavior] {name} failed to land on a NavMesh surface near {transform.position}. Destroying to avoid physics glitches.");
+            Destroy(gameObject);
+            return;
         }
 
         AddVisualRepresentation();
@@ -111,6 +126,33 @@ public class EnemyBehavior : MonoBehaviour
 
     void AddVisualRepresentation()
     {
+        // Check if we already have a character model (SkinnedMeshRenderer)
+        var existingVisual = GetComponentInChildren<SkinnedMeshRenderer>();
+        if (existingVisual != null)
+        {
+            // We have a character model! Just adjust scale if needed for bosses
+            if (isBoss)
+            {
+                existingVisual.transform.localScale = Vector3.one * 2.0f;
+            }
+            // Don't create any additional visuals - the character model is perfect
+            return;
+        }
+
+        // Check for any other renderers (MeshRenderer, etc.)
+        var anyRenderer = GetComponentInChildren<Renderer>();
+        if (anyRenderer != null)
+        {
+            // We have some kind of visual representation already
+            if (isBoss)
+            {
+                anyRenderer.transform.localScale = Vector3.one * 2.0f;
+            }
+            return;
+        }
+
+        // Only create a fallback cube if we have NO visual representation at all
+        Debug.LogWarning($"No visual representation found for {gameObject.name}. Creating fallback cube.");
         GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
         visual.transform.SetParent(transform);
         visual.transform.localPosition = Vector3.zero;
@@ -178,7 +220,10 @@ public class EnemyBehavior : MonoBehaviour
     {
         lastAttackTime = Time.time;
         Status playerStatus = player ? player.GetComponent<Status>() : null;
-        if (playerStatus) playerStatus.TakeDamage(damage);
+        if (playerStatus != null)
+        {
+            playerStatus.TakeDamage(damage, transform.position);
+        }
     }
 
     public void TakeDamage(int amount)
@@ -193,16 +238,22 @@ public class EnemyBehavior : MonoBehaviour
         }
 
         int finalDamage = Mathf.RoundToInt(amount * damageTakenMultiplier * playerDamageMultiplier);
-        // Report hit to DailyTaskManager
         DailyTaskManager.Instance?.OnEnemyTakeDamage();
+
+        if (DamageNumberController.Instance != null)
+        {
+            bool isCritical = finalDamage >= amount * 1.5f;
+            DamageNumberController.Instance.ShowDamageNumber(transform.position, finalDamage, isBoss, isCritical);
+        }
 
         currentHealth -= finalDamage;
         StartCoroutine(DamageFlash());
 
         if (currentHealth <= 0)
+        {
             Die();
+        }
     }
-
     System.Collections.IEnumerator DamageFlash()
     {
         var renderers = GetComponentsInChildren<Renderer>();

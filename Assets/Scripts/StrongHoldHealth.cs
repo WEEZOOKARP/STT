@@ -38,7 +38,7 @@ public class StrongholdHealth : MonoBehaviour
         currentHealth = Mathf.Max(1, maxHealth);
 
         // Auto-find HUD bar in scene
-        hudBar = FindObjectOfType<StrongholdHealthBar>();
+        hudBar = FindFirstObjectByType<StrongholdHealthBar>();
         if (hudBar == null)
         {
             Debug.LogWarning("No StrongholdHealthBar found in scene. HUD will not update.");
@@ -54,6 +54,19 @@ public class StrongholdHealth : MonoBehaviour
         if (amount <= 0 || currentHealth <= 0) return;
 
         currentHealth = Mathf.Max(0, currentHealth - amount);
+
+        // Show damage number
+        if (DamageNumberController.Instance != null)
+        {
+            // Stronghold damage is always "critical" since it's significant
+            bool isCritical = amount >= 5; // Consider 5+ damage as critical for stronghold
+            DamageNumberController.Instance.ShowDamageNumber(transform.position + Vector3.up * 2f, amount, false, isCritical, true);
+        }
+
+        if (DamageIndicatorController.Instance != null)
+        {
+            DamageIndicatorController.Instance.ReportDamage(transform.position, DamageIndicatorType.Stronghold);
+        }
 
         // Update HUD
         if (hudBar != null)

@@ -21,7 +21,7 @@ public class SurviveWaveCondition : TutorialCondition
         isCompleted = false;
 
         // Using existing WaveManager events - subscribing to wave complete event.
-        WaveManager waveManager = FindObjectOfType<WaveManager>();
+        WaveManager waveManager = FindFirstObjectByType<WaveManager>();
         if (waveManager != null)
         {
             waveManager.OnWaveComplete += OnWaveComplete;
@@ -29,7 +29,7 @@ public class SurviveWaveCondition : TutorialCondition
     }
 
     public override void StopCondition() {
-        WaveManager waveManager = FindObjectOfType<WaveManager>();
+        WaveManager waveManager = FindFirstObjectByType<WaveManager>();
         // Unsubscribing from wave complete event.
         if (waveManager != null) {
             waveManager.OnWaveComplete -= OnWaveComplete;

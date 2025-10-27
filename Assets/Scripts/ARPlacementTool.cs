@@ -26,8 +26,8 @@ public class ARPlacementTool : MonoBehaviour
     void Awake()
     {
         if (!arCamera && Camera.main) arCamera = Camera.main;
-        if (!raycastManager) raycastManager = FindObjectOfType<ARRaycastManager>();
-        if (!planeManager) planeManager = FindObjectOfType<ARPlaneManager>();
+        if (!raycastManager) raycastManager = FindFirstObjectByType<ARRaycastManager>();
+        if (!planeManager) planeManager = FindFirstObjectByType<ARPlaneManager>();
         mpb = new MaterialPropertyBlock();
     }
 
