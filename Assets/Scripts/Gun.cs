@@ -36,14 +36,6 @@ public class Gun : MonoBehaviour
     [Tooltip("Input axis/button name used to trigger fire (default Fire1).")]
     public string fireInput = "Fire1";
 
-    // Optional looped audio for ultra-fast rifles
-    [Header("Looped Rifle Audio (Optional)")]
-    [Tooltip("Optional continuous sound for very high fire rates.")]
-    public AudioClip rifleLoopSound;
-    [Tooltip("Optional sound played when loop stops.")]
-    public AudioClip rifleLoopEndSound;
-    private bool isLoopPlaying = false;
-
     private Animator animator;
     private float nextFireTime = 0f; // Tracks when we can fire again
 
@@ -63,27 +55,6 @@ public class Gun : MonoBehaviour
                 // continuous aiming direction (camera forward recommended)
                 Vector3 aimDir = Camera.main.transform.forward;
                 TryShoot(aimDir);
-
-                // 🔊 start looping sound if set
-                if (!isLoopPlaying && rifleLoopSound)
-                {
-                    gunSound.clip = rifleLoopSound;
-                    gunSound.loop = true;
-                    gunSound.Play();
-                    isLoopPlaying = true;
-                }
-            }
-            else
-            {
-                // 🔊 stop looping sound if playing
-                if (isLoopPlaying)
-                {
-                    gunSound.Stop();
-                    gunSound.loop = false;
-                    if (rifleLoopEndSound)
-                        gunSound.PlayOneShot(rifleLoopEndSound);
-                    isLoopPlaying = false;
-                }
             }
         }
     }
@@ -115,7 +86,7 @@ public class Gun : MonoBehaviour
 
         // Single-shot sound still plays each bullet
         // (good for pistols/shotguns or rifles without looping audio)
-        if (!rifleLoopSound && gunSound && shootSound)
+        if (gunSound && shootSound)
             gunSound.PlayOneShot(shootSound);
 
         ammo.ReduceAmmo(1);
@@ -161,7 +132,7 @@ public class Gun : MonoBehaviour
                 gunSound.PlayOneShot(reloadSound);
             animator.SetTrigger("RELOAD");
             ammo.Reload(5);
-            // Notify DailyTaskManager that the game started
+            // Notify DailyTaskManager that the gun has reloaded.
             DailyTaskManager.Instance?.OnReload();
             Debug.Log($"{gameObject.name} reloaded!");
         }

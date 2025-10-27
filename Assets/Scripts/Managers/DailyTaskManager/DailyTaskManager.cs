@@ -52,7 +52,7 @@ public class DailyTaskManager : MonoBehaviour
         if (canvasGroup) canvasGroup.alpha = 0;
     }
 
-    // Called when player starts/enters a game
+    // Called when player reload a gun
     public void OnReload()
     {
         if (!reloadOnce)
