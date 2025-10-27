@@ -299,23 +299,6 @@ public class WaveManager : MonoBehaviour
         StartNextWave();
     }
 
-
-    /// Starts the next wave in the sequence.
-    public void StartNextWave()
-    {
-        Debug.Log($"[WaveManager] Starting wave {currentWave}");
-
-        if (currentWave > maxWaves)
-        {
-            OnAllWavesComplete?.Invoke();
-            return;
-        }
-
-        buildPhaseActive = false;
-        currentWaveCoroutine = StartCoroutine(RunWave(currentWave));
-    }
-
-
     /// Stops the current wave and resets all state.
     public void StopCurrentWave()
     {
