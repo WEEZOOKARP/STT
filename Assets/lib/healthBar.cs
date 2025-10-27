@@ -10,82 +10,76 @@ public class healthBar : MonoBehaviour
     public Color highHPColor = Color.green;
     public Color midHPColor = Color.yellow;
     public Color lowHPColor = Color.red;
-
-    private int hp;
-    private int maxHP;
+    public int hp;
+    public int maxHP;
     private bool inDanger = false;
+    public ParticleSystem hitSparkEffect;
+    public ParticleSystem ShitSparkEffect;
 
     void Start()
     {
-        // Initialize with default values if not set externally
-        if (maxHP == 0)
-        {
-            maxHP = 100;
-            hp = maxHP;
-        }
+        maxHP = (int)slider.maxValue;
+        hp = maxHP;
+        UpdateBar();
     }
 
     void Update()
     {
-        // Smooth lerp for the ease health slider
-        if (easeHealthSlider != null)
-        {
-            easeHealthSlider.value = Mathf.Lerp(easeHealthSlider.value, slider.value, lerpSpeed * Time.deltaTime * 60f);
-        }
+        slider.value = hp;
+        easeHealthSlider.value = Mathf.Lerp(easeHealthSlider.value, hp, lerpSpeed * Time.deltaTime * 60f);
+
+        // Test inputs
+        if (Input.GetKeyDown(KeyCode.Space)) TakeDamage(10);
+        if (Input.GetKeyDown(KeyCode.H)) Heal(20);
     }
 
     public void SetMaxHealth(int health)
     {
         maxHP = health;
         slider.maxValue = maxHP;
-        if (easeHealthSlider != null)
-        {
-            easeHealthSlider.maxValue = maxHP;
-        }
         hp = maxHP;
-        slider.value = hp;
-        if (easeHealthSlider != null)
-        {
-            easeHealthSlider.value = hp;
-        }
         UpdateBar();
     }
 
     public void SetHealth(int health)
     {
         hp = Mathf.Clamp(health, 0, maxHP);
-        slider.value = hp;
         UpdateBar();
     }
 
+    public void TakeDamage(int damage){
+        SetHealth(hp - damage);
+        if (hitSparkEffect != null && slider.value != 0)
+        {
+            hitSparkEffect.Play();
+            if (ShitSparkEffect != null)
+                ShitSparkEffect.Play();
+        }
+    }
+    public void Heal(int recover) => SetHealth(hp + recover);
+
     void UpdateBar()
     {
-        if (maxHP == 0) return;
-
         float hpPercent = (float)hp / maxHP;
 
-        if (fill != null)
+        if (hpPercent > 0.5f)
         {
-            if (hpPercent > 0.5f)
-            {
-                fill.color = highHPColor;
-                inDanger = false;
-            }
-            else if (hpPercent > 0.2f)
-            {
-                fill.color = midHPColor;
-                inDanger = false;
-            }
-            else
-            {
-                fill.color = lowHPColor;
-                inDanger = true;
-            }
+            fill.color = highHPColor;
+            inDanger = false;
+        }
+        else if (hpPercent > 0.2f)
+        {
+            fill.color = midHPColor;
+            inDanger = false;
+        }
+        else
+        {
+            fill.color = lowHPColor;
+            inDanger = true;
         }
     }
 
     public bool isInDanger() => inDanger;
-    public float getHealthPercent() => maxHP > 0 ? (float)hp / maxHP : 0f;
-    public int GetCurrentHealth() => hp;
-    public int GetMaxHealth() => maxHP;
+    public float getHealthPercent() => (float)hp / maxHP;
 }
+

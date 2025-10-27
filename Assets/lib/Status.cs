@@ -22,15 +22,6 @@ public class Status : MonoBehaviour
             healthBar.SetMaxHealth(maxHealth);
         }
     }
-
-    void Update()
-    {
-        // Testing controls
-        if (Input.GetKeyDown(KeyCode.H))
-        {
-            Heal(20);
-        }
-    }
     
     void ApplyMetaProgressionBonuses()
     {
