@@ -160,7 +160,7 @@ public class SettingsMenuController : MonoBehaviour
     // Immediate feedback as volume is adjusted.
     public void OnVolumeChanged(float value)
     {
-        // Storing old masterVolume value for debugging./
+        // Storing old masterVolume value for debugging.
         float oldVolume = SettingsManager.Instance.currentSettings.masterVolume;
 
         if (SettingsManager.Instance != null)
