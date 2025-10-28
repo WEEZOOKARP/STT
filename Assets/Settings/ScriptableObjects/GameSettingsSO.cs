@@ -5,7 +5,4 @@
 using UnityEngine;
 
 [CreateAssetMenu(filename = "GameSettings", menuName = "Settings/Game Settings")]
-public class GameSettingsSO : ScriptableObject
-{
-    
-}
+public class GameSettingsSO : ScriptableObject { }

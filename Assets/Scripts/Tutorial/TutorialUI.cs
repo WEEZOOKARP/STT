@@ -1,69 +1,140 @@
+/*
+ * TutorialUI.cs
+ *
+ * Created by Archie Armstrong | 21155564
+ * Date: 26/09/2025
+ *
+ * Purpose: Displays in-game tutorial hints that pause gameplay.
+ * Player taps the hint panel to dismiss and resume gameplay.
+ * Blocks menu access while hint is active.
+ *
+ * Dependencies: TutorialManager, GamePauseManager
+ *
+ * Integration Points:
+ * - Subscribed to TutorialManager.OnStepStarted for hint display.
+ * - Calls GamePauseManager to pause/resume game.
+ * - Blocks PauseButton input while active.
+ */
+
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class TutorialUI : MonoBehaviour
 {
     [Header("UI References")]
-    public TMPro.TextMeshProUGUI instructionText;
-    public GameObject tutorialPanel;
+    public GameObject tutorialHintPanel;
+    public TextMeshProUGUI hintText;
+    public Button hintDismissButton;
+    public Image hintBackground;
+
+    [Header("Hint Settings")]
+    public Color hintBackgroundColor = new Color(0, 0, 0, 0.7f);
 
     void Start()
     {
-        // Future event subscription - for handling further step changes.
-        TutorialManager.OnStepStarted += OnStepStarted;
+        // Subscribe to tutorial events.
+        TutorialManager.OnStepStarted += OnTutorialStepStarted;
         TutorialManager.OnTutorialCompleted += OnTutorialCompleted;
-        
-        // Use Invoke to check state after all Start() methods have run.
-        Invoke(nameof(CheckInitialState), 0.1f);
-    }
-    
-    void CheckInitialState()
-    {
-        // Immediately checking state.
-        // Handling case where the tutorial has already started.
-        if (TutorialManager.Instance != null)
+
+        Button dismissButton = tutorialPanel.GetComponent<Button>();
+        // Wire up dismiss button
+        if (dismissButton != null)
         {
-            // Checking if tutorial is already running.
-            if (TutorialManager.Instance.currentState == TutorialManager.TutorialState.Running)
-            {
-                // Catching up with the current step immediately.
-                OnStepStarted(TutorialManager.Instance.currentStep);
-            }
+            dismissButton.onClick.AddListener(DismissTutorialHint);
         }
+
+        // Hiding hint panel initially.
+        HideTutorialHint();
     }
 
-    void OnStepStarted(TutorialStep step)
+    void OnDestroy()
+    {
+        // Unsubscribe from tutorial events.
+        TutorialManager.OnStepStarted -= OnTutorialStepStarted;
+        TutorialManager.OnTutorialCompleted -= OnTutorialCompleted;
+    }
+
+    // Called when tutorial manager advances to new step.
+    void OnTutorialStepStarted(TutorialStep step)
     {
         if (step == null)
         {
-            Debug.LogError("Tutorial step is null.");
+            Debug.LogWarning("[TutorialUI] Tutorial step is null");
             return;
         }
-        
-        if (instructionText == null)
-        {
-            Debug.LogError("Instruction text UI component is null.");
-            return;
-        }
-        
-        if (string.IsNullOrEmpty(step.instructionText))
-        {
-            Debug.LogError($"Tutorial step '{step.stepName}' has empty instruction text.");
-            return;
-        }
-        
-        instructionText.text = step.instructionText;
 
-        if (tutorialPanel != null)
+        // Display the hint
+        DisplayTutorialHint(step.instructionText);
+
+        if (GamePauseManager.Instance != null) 
         {
-            tutorialPanel.SetActive(true);
+            GamePauseManager.Instance.SetPauseReason(GamePauseReason.TutorialHint);
+            Time.timeScale = 0f;
         }
     }
 
+    // Displaying a tutorial hint and pausing the game.
+    void DisplayTutorialHint(string hintMessage)
+    {
+        Debug.Log($"[TutorialUI] Displaying hint: {hintMessage}");
+
+        // Setting hint text.
+        if (hintText != null)
+        {
+            hintText.text = hintMessage;
+        }
+
+        // Showing hint panel.
+        if (tutorialHintPanel != null)
+        {
+            tutorialHintPanel.SetActive(true);
+        }
+
+        // Pausing the game for the hint.
+        if (GamePauseManager.Instance != null)
+        {
+            GamePauseManager.Instance.SetPauseReason(GamePauseReason.TutorialHint);
+            Time.timeScale = 0f;
+        }
+    }
+
+    // Called when player clicks/taps the hint panel to dismiss.
+    public void DismissTutorialHint()
+    {
+        Debug.Log("[TutorialUI] Hint dismissed by player");
+
+        // Hiding hint panel.
+        HideTutorialHint();
+
+        // Resuming gameplay.
+        if (GamePauseManager.Instance != null)
+        {
+            GamePauseManager.Instance.SetPauseReason(GamePauseReason.NotPaused);
+            Time.timeScale = 1f;
+        }
+
+        // Notify tutorial manager that hint was dismissed.
+        if (TutorialManager.Instance != null)
+        {
+            TutorialManager.Instance.AdvanceToNextStep();
+        }
+    }
+
+    // Hides the tutorial hint panel.
+    void HideTutorialHint()
+    {
+        if (tutorialHintPanel != null)
+        {
+            tutorialHintPanel.SetActive(false);
+        }
+    }
+
+    // Called when tutorial system completes.
     void OnTutorialCompleted()
     {
-        if (tutorialPanel != null)
-        {
-            tutorialPanel.SetActive(false);
-        }
+        Debug.Log("[TutorialUI] Tutorial completed");
+        HideTutorialHint();
     }
+
 }

@@ -79,14 +79,42 @@ public class SettingsManager : MonoBehaviour
             Debug.LogError($"[SettingsManager] Failed to load settings: {e.Message}");
             currentSettings = new GameSettings(); // Using default settings if load fails.
         }
+
+        // Applying audio settings immediately, as to start game with correct volume.
+        ApplyAudioSettings();
     }
 
+    // Saving and applying changes together.
+    public void ApplySettingsChanges()
+    {
+        SaveSettings(); // Saving settings change to file.
+        ApplyAudioSettings(); // Applying to audio system immediately.
+        Debug.Log("[SettingsManager] Settings changes applied.");
+    }
+
+    // Toggling mute - mutes sound instantly.
     public void MuteSound()
     {
-        if (currentSettings != null) 
+        currentSettings.muteSound = !currentSettings.muteSound;
+        ApplyAudioSettings(); // Applying mute immediately.
+        Debug.Log($"[SettingsManager] Sound muted: {currentSettings.muteSound}");
+    }
+
+    public void ApplyAudioSettings()
+    {
+        if (currentSettings != null)
         {
-            currentSettings.muteSound = !currentSettings.muteSound;
-            Debug.Log($"Sound muted: {currentSettings.muteSound}");
+            // Applying volume based on the mute state.
+            AudioListener.volume = currentSettings.muteSound ? 0f : currentSettings.masterVolume;
+
+            Debug.Log($"[SettingsManager] Audio settings applied:");
+            Debug.Log($"  - Muted: {currentSettings.muteSound}");
+            Debug.Log($"  - Master Volume: {currentSettings.masterVolume}");
+            Debug.Log($"  - AudioListener.volume: {AudioListener.volume}");
+        }
+        else
+        {
+            Debug.LogWarning("[SettingsManager] Cannot apply audio - currentSettings is null!");
         }
     }
 }
