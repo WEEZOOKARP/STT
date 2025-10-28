@@ -48,9 +48,6 @@ public class EnemyBehavior : MonoBehaviour
     [Header("Coin Drop (visual only)")]
     public GameObject coinPrefab;
   
-
-
-
     private int currentHealth;
     private Transform player;
     private NavMeshAgent agent;
@@ -84,21 +81,37 @@ public class EnemyBehavior : MonoBehaviour
         bossLootTableName = enemyType.bossLootTableName;
 
         currentHealth = maxHealth;
+        baseMoveSpeed = moveSpeed; // Store base speed for multiplier calculations
 
         TryCachePlayer();
         AutoAssignStronghold();
 
         agent = GetComponent<NavMeshAgent>();
         if (!agent) agent = gameObject.AddComponent<NavMeshAgent>();
-        agent.speed = moveSpeed;
+        agent.speed = Mathf.Max(0.5f, moveSpeed);
+        agent.angularSpeed = 720f;
+        agent.acceleration = Mathf.Max(4f, moveSpeed * 3f);
         agent.stoppingDistance = 0.15f; // lets them tuck in close
         agent.autoBraking = true;
+        agent.baseOffset = 0f;
+        agent.updateUpAxis = true;
+        agent.updateRotation = true;
 
         // Make sure we start on the NavMesh if spawned slightly off
         NavMeshHit hit;
-        if (NavMesh.SamplePosition(transform.position, out hit, 1.0f, NavMesh.AllAreas))
+        if (NavMesh.SamplePosition(transform.position, out hit, 5.0f, NavMesh.AllAreas))
         {
             agent.Warp(hit.position);
+            if (!agent.isOnNavMesh)
+            {
+                Debug.LogWarning($"[EnemyBehavior] {name} warped but is still off the NavMesh at {transform.position}. Check navmesh bake.");
+            }
+        }
+        else
+        {
+            Debug.LogError($"[EnemyBehavior] {name} failed to land on a NavMesh surface near {transform.position}. Destroying to avoid physics glitches.");
+            Destroy(gameObject);
+            return;
         }
 
         AddVisualRepresentation();
@@ -126,6 +139,33 @@ public class EnemyBehavior : MonoBehaviour
 
     void AddVisualRepresentation()
     {
+        // Check if we already have a character model (SkinnedMeshRenderer)
+        var existingVisual = GetComponentInChildren<SkinnedMeshRenderer>();
+        if (existingVisual != null)
+        {
+            // We have a character model! Just adjust scale if needed for bosses
+            if (isBoss)
+            {
+                existingVisual.transform.localScale = Vector3.one * 2.0f;
+            }
+            // Don't create any additional visuals - the character model is perfect
+            return;
+        }
+
+        // Check for any other renderers (MeshRenderer, etc.)
+        var anyRenderer = GetComponentInChildren<Renderer>();
+        if (anyRenderer != null)
+        {
+            // We have some kind of visual representation already
+            if (isBoss)
+            {
+                anyRenderer.transform.localScale = Vector3.one * 2.0f;
+            }
+            return;
+        }
+
+        // Only create a fallback cube if we have NO visual representation at all
+        Debug.LogWarning($"No visual representation found for {gameObject.name}. Creating fallback cube.");
         GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
         visual.transform.SetParent(transform);
         visual.transform.localPosition = Vector3.zero;
@@ -176,7 +216,7 @@ public class EnemyBehavior : MonoBehaviour
         // Base contact fallback (scores a hit even if the agent stops a hair short)
         if (strongholdTarget && distToBase <= baseContactDistance)
         {
-            DamageStronghold(1); // your forwarder to the stronghold’s TakeDamage
+            DamageStronghold(1); // your forwarder to the stronghold's TakeDamage
             Die();               // kamikaze behaviour when they reach the base
             return;
         }
@@ -193,32 +233,40 @@ public class EnemyBehavior : MonoBehaviour
     {
         lastAttackTime = Time.time;
         Status playerStatus = player ? player.GetComponent<Status>() : null;
-        if (playerStatus) playerStatus.TakeDamage(damage);
+        if (playerStatus != null)
+        {
+            playerStatus.TakeDamage(damage, transform.position);
+        }
     }
 
-public void TakeDamage(int amount)
-{
-    if (isDead) return;
-    var lvl = player ? player.GetComponent<Leveling>() : null;
-
-    float playerDamageMultiplier = 1f;
-    if (lvl != null && lvl.playerStats != null)
+    public void TakeDamage(int amount)
     {
-        playerDamageMultiplier = lvl.playerStats.GetPlayerMultipliers().Damage;
+        if (isDead) return;
+        var lvl = player ? player.GetComponent<Leveling>() : null;
+
+        float playerDamageMultiplier = 1f;
+        if (lvl != null && lvl.playerStats != null)
+        {
+            playerDamageMultiplier = lvl.playerStats.GetPlayerMultipliers().Damage;
+        }
+
+        int finalDamage = Mathf.RoundToInt(amount * damageTakenMultiplier * playerDamageMultiplier);
+        DailyTaskManager.Instance?.OnEnemyTakeDamage();
+
+        if (DamageNumberController.Instance != null)
+        {
+            bool isCritical = finalDamage >= amount * 1.5f;
+            DamageNumberController.Instance.ShowDamageNumber(transform.position, finalDamage, isBoss, isCritical);
+        }
+
+        currentHealth -= finalDamage;
+        StartCoroutine(DamageFlash());
+
+        if (currentHealth <= 0)
+        {
+            Die();
+        }
     }
-
-    int finalDamage = Mathf.RoundToInt(amount * damageTakenMultiplier * playerDamageMultiplier);
-    // Report hit to DailyTaskManager
-    DailyTaskManager.Instance?.OnEnemyTakeDamage();
-
-    currentHealth -= finalDamage;
-    StartCoroutine(DamageFlash());
-
-    if (currentHealth <= 0)
-        Die();
-}
-
-
     System.Collections.IEnumerator DamageFlash()
     {
         var renderers = GetComponentsInChildren<Renderer>();
@@ -234,49 +282,47 @@ public void TakeDamage(int amount)
     }
 
     void Die()
-{
-    if (isDead) return;
-    isDead = true;
-
-    if (agent) agent.enabled = false;
-    var col = GetComponent<Collider>();
-    if (col) col.enabled = false;
-
-    try
     {
-        // Award XP
-        Leveling lvl = null;
-        if (targetAnchor) lvl = targetAnchor.GetComponentInParent<Leveling>();
-        if (lvl != null) lvl.AddExperience(isBoss ? 100f : 5f);
+        if (isDead) return;
+        isDead = true;
 
-        // Meta kill stats
-        var meta = MetaProgression.Instance;
-        if (meta != null) meta.KillEnemy(gameObject.name, isBoss);
+        if (agent) agent.enabled = false;
+        var col = GetComponent<Collider>();
+        if (col) col.enabled = false;
 
-        // Report kill to DailyTaskManager
-        DailyTaskManager.Instance?.OnEnemyKilled();
-
-        // Visual coin drop (optional cosmetic)
-        if (coinPrefab != null)
+        try
         {
-            Vector3 spawnPos = transform.position + Vector3.up * 0.25f;
-            var go = Instantiate(coinPrefab, spawnPos, Quaternion.identity);
-            var vis = go.GetComponent<CoinPickupVisual>();
-            if (vis != null) vis.Initialize(targetAnchor);
+            // Award XP
+            Leveling lvl = null;
+            if (targetAnchor) lvl = targetAnchor.GetComponentInParent<Leveling>();
+            if (lvl != null) lvl.AddExperience(isBoss ? 100f : 5f);
+
+            // Meta kill stats
+            var meta = MetaProgression.Instance;
+            if (meta != null) meta.KillEnemy(gameObject.name, isBoss);
+
+            // Report kill to DailyTaskManager
+            DailyTaskManager.Instance?.OnEnemyKilled();
+
+            // Visual coin drop (optional cosmetic)
+            if (coinPrefab != null)
+            {
+                Vector3 spawnPos = transform.position + Vector3.up * 0.25f;
+                var go = Instantiate(coinPrefab, spawnPos, Quaternion.identity);
+                var vis = go.GetComponent<CoinPickupVisual>();
+                if (vis != null) vis.Initialize(targetAnchor);
+            }
+
+            // Gold payout
+            if (GoldService.Instance != null)
+                GoldService.Instance.Add(isBoss ? bossGoldReward : goldReward);
         }
-
-        // Gold payout
-        if (GoldService.Instance != null)
-            GoldService.Instance.Add(isBoss ? bossGoldReward : goldReward);
+        finally
+        {
+            OnDeath?.Invoke(gameObject);
+            Destroy(gameObject);
+        }
     }
-    finally
-    {
-        OnDeath?.Invoke(gameObject);
-        Destroy(gameObject);
-    }
-}
-
-
 
     // ----------------- Helpers -----------------
     void SetSafeDestination(Vector3 worldPos)
@@ -320,7 +366,7 @@ public void TakeDamage(int amount)
         return null;
     }
 
-    // -------- Stronghold damage passthrough (keeps your single source of truth) --------
+    //Stronghold damage passthrough (keeps your single source of truth)
     public void DamageStronghold(int amount)
     {
         // This assumes you already have the forwarder that calls stronghold.TakeDamage(...)
@@ -330,7 +376,7 @@ public void TakeDamage(int amount)
         if (sh) sh.TakeDamage(amount);
     }
 
-    // ----------------- Gizmos -----------------
+    // Gizmos
     void OnDrawGizmosSelected()
     {
         Gizmos.color = new Color(1f, 0.9f, 0f, 0.75f);
@@ -346,6 +392,8 @@ public void TakeDamage(int amount)
     {
         if (c.gameObject.CompareTag("Player")) AttackPlayer();
     }
+
+    // ----------------- Multiplier System -----------------
     public void ApplySpeedMultiplier(float mult)
     {
         speedMultiplier *= mult;
@@ -366,5 +414,30 @@ public void TakeDamage(int amount)
     public void ResetDamageMultiplier()
     {
         damageTakenMultiplier = 1f;
+    }
+
+    /// Applies special wave modifiers to this enemy instance.
+    /// Called by WaveManager when spawning enemies during special waves.
+    public void ApplyWaveModifiers(float healthMult, float damageMult, float speedMult, float lootBonus)
+    {
+        // Apply health multiplier
+        maxHealth = Mathf.RoundToInt(maxHealth * healthMult);
+        currentHealth = maxHealth; // Reset to new max health
+
+        // Apply damage multiplier
+        damage = Mathf.RoundToInt(damage * damageMult);
+
+        // Apply speed multiplier
+        moveSpeed *= speedMult;
+        baseMoveSpeed = moveSpeed; // Update base speed
+        if (agent != null)
+        {
+            agent.speed = moveSpeed * speedMultiplier; // Apply with existing multiplier
+        }
+
+        // Apply loot bonus
+        lootDropChance = Mathf.Min(1f, lootDropChance + lootBonus);
+
+        Debug.Log($"[EnemyBehavior] {gameObject.name} wave modifiers applied: HP={maxHealth}, DMG={damage}, SPD={moveSpeed:F1}, Loot={lootDropChance:F2}");
     }
 }

@@ -25,9 +25,9 @@ public class BuildPhaseController : MonoBehaviour
 
     void Awake()
     {
-        if (!placer) placer = FindObjectOfType<ARWallPlacementManager>();
-        if (!waveManager) waveManager = FindObjectOfType<WaveManager>();
-        if (!gunController) gunController = FindObjectOfType<GunController>();
+        if (!placer) placer = FindFirstObjectByType<ARWallPlacementManager>();
+        if (!waveManager) waveManager = FindFirstObjectByType<WaveManager>();
+        if (!gunController) gunController = FindFirstObjectByType<GunController>();
     }
 
     void OnEnable()

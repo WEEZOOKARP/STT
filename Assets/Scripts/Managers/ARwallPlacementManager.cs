@@ -390,10 +390,24 @@ public class ARWallPlacementManager : MonoBehaviour
         }
     }
 
-    private void OnPlanesChanged(ARPlanesChangedEventArgs evt)
+#if UNITY_XR_ARFOUNDATION_6_0_OR_NEWER
+    private void OnTrackablesChanged(ARTrackablesChangedEventArgs<ARPlane> evt) => HandlePlaneRemovals(evt.removed);
+#else
+#pragma warning disable CS0618
+    private void OnPlanesChanged(ARPlanesChangedEventArgs evt) => HandlePlaneRemovals(evt.removed);
+#pragma warning restore CS0618
+#endif
+
+    private void HandlePlaneRemovals(System.Collections.Generic.IEnumerable<ARPlane> removed)
     {
-        foreach (var p in evt.removed)
-            occupied.Remove(p.trackableId);
+        if (removed == null) return;
+        foreach (var plane in removed)
+        {
+            if (plane != null)
+            {
+                occupied.Remove(plane.trackableId);
+            }
+        }
     }
 }
 
@@ -458,3 +472,4 @@ public class WallType // <-- NOT MonoBehaviour/ScriptableObject
     public float damageMultiplier = 1.5f;
     public float speedMultiplier = 0.6f;
 }
+

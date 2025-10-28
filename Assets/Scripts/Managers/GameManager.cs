@@ -93,32 +93,62 @@ public class GameManager : MonoBehaviour
             TutorialManager.OnTutorialCompleted += OnTutorialCompleted;
         }
 
-        waveManager = FindObjectOfType<WaveManager>();
+        waveManager = FindFirstObjectByType<WaveManager>();
         if (waveManager == null)
         {
             GameObject waveManagerObj = new GameObject("WaveManager");
             waveManager = waveManagerObj.AddComponent<WaveManager>();
         }
 
-        metaProgression = FindObjectOfType<MetaProgression>();
+        metaProgression = FindFirstObjectByType<MetaProgression>();
         if (metaProgression == null)
         {
             GameObject metaProgObj = new GameObject("MetaProgression");
             metaProgression = metaProgObj.AddComponent<MetaProgression>();
         }
 
-        lootSystem = FindObjectOfType<LootSystem>();
+        lootSystem = FindFirstObjectByType<LootSystem>();
         if (lootSystem == null)
         {
             GameObject lootSystemObj = new GameObject("LootSystem");
             lootSystem = lootSystemObj.AddComponent<LootSystem>();
         }
 
-        runState = FindObjectOfType<RunState>();
+        runState = FindFirstObjectByType<RunState>();
         if (runState == null)
         {
             GameObject runStateObj = new GameObject("RunState");
             runState = runStateObj.AddComponent<RunState>();
+        }
+
+        // Initialize DamageNumberController
+        if (DamageNumberController.Instance == null)
+        {
+            GameObject damageControllerObj = new GameObject("DamageNumberController");
+            var damageController = damageControllerObj.AddComponent<DamageNumberController>();
+            
+            // Create damage number parent for organization
+            GameObject damageParent = new GameObject("DamageNumbers");
+            damageParent.transform.SetParent(damageControllerObj.transform);
+            damageController.damageNumberParent = damageParent.transform;
+            
+            // Load the damage number prefab
+            GameObject damageNumberPrefab = Resources.Load<GameObject>("DamageNumber");
+            if (damageNumberPrefab == null)
+            {
+                Debug.LogError("DamageNumber prefab not found in Resources folder! Creating fallback.");
+                // Create a simple fallback prefab
+                damageNumberPrefab = CreateFallbackDamageNumberPrefab();
+            }
+            damageController.damageNumberPrefab = damageNumberPrefab;
+            
+            Debug.Log("DamageNumberController initialized automatically");
+        }
+
+        if (DamageIndicatorController.Instance == null)
+        {
+            GameObject indicatorControllerObj = new GameObject("DamageIndicatorController");
+            indicatorControllerObj.AddComponent<DamageIndicatorController>();
         }
 
         // Subscribe to events
@@ -324,5 +354,25 @@ public class GameManager : MonoBehaviour
     void TriggerGameOver()
     {
         GameOver();
+    }
+
+    GameObject CreateFallbackDamageNumberPrefab()
+    {
+        // Create a simple 3D text damage number prefab
+        GameObject damageNumber = new GameObject("DamageNumber");
+        
+        // Add TextMesh component for 3D text
+        var textMesh = damageNumber.AddComponent<TextMesh>();
+        textMesh.text = "0";
+        textMesh.fontSize = 36;
+        textMesh.color = Color.white;
+        textMesh.anchor = TextAnchor.MiddleCenter;
+        textMesh.alignment = TextAlignment.Center;
+        
+        // Scale it down to be visible in world space
+        damageNumber.transform.localScale = Vector3.one * 0.01f;
+        
+        Debug.Log("Created fallback damage number prefab");
+        return damageNumber;
     }
 }
