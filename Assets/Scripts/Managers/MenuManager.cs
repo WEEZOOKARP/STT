@@ -27,9 +27,6 @@ public class MenuManager : MonoBehaviour
     public static event Action OnMenuOpened;
     public static event Action OnMenuClosed;
 
-    [Header("Menu State")]
-    public MenuStates currentMenuState = MenuStates.MainMenu;
-
     [Header("Current Scene")]
     public SceneNames currentScene = SceneNames.MainMenu;
 
@@ -56,13 +53,13 @@ public class MenuManager : MonoBehaviour
     {
         if (SettingsMenuManager.Instance != null)
         {
-            if (SceneMenuManager.GetScene() == SceneNames.MainMenu)
+            if (SceneMenuManager.Instance.GetScene() == SceneNames.MainMenu)
             {
-                SettingsMenuManager.SetParentMenu(SettingsParentMenuType.MainMenu);
+                SettingsMenuManager.Instance.SetParentMenu(SettingsParentMenuType.MainMenu);
             }
             else
             {
-                SettingsMenuManager.SetParentMenu(SettingsParentMenuType.PauseMenu);
+                SettingsMenuManager.Instance.SetParentMenu(SettingsParentMenuType.PauseMenu);
             }
         }
     }
@@ -79,13 +76,13 @@ public class MenuManager : MonoBehaviour
     // Returns to main menu scene.
     public void ReturnToMainMenu()
     {
-        Debug.Log("[MenuManager] Returning to main menu");
+        Debug.Log("[MenuManager] Returning to Main Menu.");
 
         // Resuming time before scene change.
         Time.timeScale = 1f; // Does TimeScale matter? What does it do?
 
         // Loading main menu scene.
-        UnityEngine.SceneManagement.SceneManager.LoadScene(SceneNames.MainMenu);
+        UnityEngine.SceneManagement.SceneManager.LoadScene(SceneNames.MainMenu.ToString());
     }
 
     public void EnteringGame()
@@ -96,13 +93,13 @@ public class MenuManager : MonoBehaviour
         Time.timeScale = 1f; // Does TimeScale matter? What does it do?
 
         // Loading game scene.
-        UnityEngine.SceneManagement.SceneManager.LoadScene(SceneNames.Game);
+        UnityEngine.SceneManagement.SceneManager.LoadScene(SceneNames.CoreGameDemo.ToString());
     }
 
     // Method called when exiting settings menu to parent menu.
     public void ReturnToParentMenu(SettingsParentMenuType settingsParent)
     {
-        if (settingsParent.name == SettingsParentMenuType.MainMenu)
+        if (settingsParent == SettingsParentMenuType.MainMenu)
         {
             if (MainMenuManager.Instance != null)
             {
@@ -110,11 +107,11 @@ public class MenuManager : MonoBehaviour
                 Debug.Log("[MenuManager] Attempting to open settings parent menu - Main Menu.");
             }
         }
-        else if (settingsParent.name == SettingsParentMenuType.PauseMenu)
+        else if (settingsParent == SettingsParentMenuType.PauseMenu)
         {
             if (PauseMenuManager.Instance != null)
             {
-                PauseMenuManager.OpenPauseMenu();
+                PauseMenuManager.Instance.OpenPauseMenu();
                 Debug.Log("[MenuManager] Attempting to open settings parent menu - Pause Menu.");
             }
         }
@@ -123,15 +120,15 @@ public class MenuManager : MonoBehaviour
     // Method to hide parent menu while settings opens/is open.
     public void HideParentMenu(SettingsParentMenuType settingsParent)
     {
-        if (settingsParent.name == SettingsParentMenuType.MainMenu)
+        if (settingsParent == SettingsParentMenuType.MainMenu)
         {
             if (MainMenuManager.Instance != null)
             {
-                MainMenuManager.CloseMainMenu(); // Implement in MainMenuManager.
+                MainMenuManager.Instance.HideMainMenu(); // Implement in MainMenuManager.
                 Debug.Log("[MenuManager] Attempting to close main menu to open settings.");
             }
         }
-        if (settingsParent.name == SettingsParentMenuType.PauseMenu)
+        if (settingsParent == SettingsParentMenuType.PauseMenu)
         {
             if (PauseMenuManager.Instance != null && PauseMenuController.Instance != null)
             {

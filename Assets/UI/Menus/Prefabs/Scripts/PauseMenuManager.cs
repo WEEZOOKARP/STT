@@ -17,7 +17,6 @@ public class PauseMenuManager : MonoBehaviour
 
     // Caching logic for Pause Menu - Updated using MenuCachingManager references.
     private float pauseMenuCacheTimer = 0f;
-    private const float CACHE_DURATION = 30f;
 
     void Awake()
     {
@@ -36,6 +35,12 @@ public class PauseMenuManager : MonoBehaviour
     // bool hidden parameter - if true, menu made on scene load, if false, player clicked pause menu button.
     public void CreatePauseMenu(bool hidden)
     {
+        if (pauseMenuState == MenuStates.Cached)
+        {
+            pauseMenuState = MenuStates.Open; // Stops Cache timer increasing - timer resets on menu close.
+            OpenPauseMenu();
+        }
+        
         // If pauseMenu already exists, no need to create new.
         if (currentPauseMenuInstance != null)
         {

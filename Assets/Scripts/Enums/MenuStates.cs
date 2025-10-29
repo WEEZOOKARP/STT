@@ -1,4 +1,4 @@
-public enum MenuState
+public enum MenuStates
 {
     Cached, // Menu is not open/destroyed and is cached.
     Open, // Menu is open and not cached.

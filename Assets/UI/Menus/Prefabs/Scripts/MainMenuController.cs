@@ -90,7 +90,7 @@ public class MainMenuController : MonoBehaviour
     }
 
     // Hides the mainMenu.
-    private void HideMainMenu()
+    public void HideMainMenu()
     {
         if (mainMenuPanel != null)
         {

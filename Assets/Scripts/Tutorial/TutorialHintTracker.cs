@@ -104,11 +104,11 @@ public class TutorialHintTracker : MonoBehaviour
             {
                 foreach (var progress in savedProgress)
                 {
-                    hintProgress[progress.hintId] = new HintProgress(progress.hintId)
+                    hintProgress[progress.Key] = new HintProgress(progress.Key)
                     {
-                        hasBeenShown = progress.hasBeenShown,
-                        hasBeenDismissed = progress.hasBeenDismissed,
-                        timesSeen = progress.timesSeen,
+                        hasBeenShown = progress.Value.hasBeenShown,
+                        hasBeenDismissed = progress.Value.hasBeenDismissed,
+                        timesSeen = progress.Value.timesSeen,
                     };
                 }
             }
@@ -120,23 +120,8 @@ public class TutorialHintTracker : MonoBehaviour
     {
         if (MetaProgression.Instance != null)
         {
-            // Convert dictionary to list format for MetaProgression.
-            var hintDataList = new List<MetaProgressionData.HintProgressData>();
-            foreach (var kvp in hintProgress)
-            {
-                hintDataList.Add(
-                    new MetaProgressionData.HintProgressData
-                    {
-                        hintId = kvp.Value.hintId,
-                        hasBeenShown = kvp.Value.hasBeenShown,
-                        hasBeenDismissed = kvp.Value.hasBeenDismissed,
-                        timesSeen = kvp.Value.timesSeen,
-                    }
-                );
-            }
-
-            // Calling MetaProgression to save.
-            MetaProgression.Instance.SaveHintProgress(hintDataList);
+            // Pass the dictionary directly - MetaProgression handles internal conversion
+            MetaProgression.Instance.SaveHintProgress(hintProgress);
         }
     }
 
@@ -150,16 +135,16 @@ public class TutorialHintTracker : MonoBehaviour
     }
 }
 
-// Extension class for MetaProgressionData for serialization compatibility.
-[System.Serializable]
-public class MetaProgressionData
-{
-    [System.Serializable]
-    public class HintProgressData
-    {
-        public string hintId;
-        public bool hasBeenShown;
-        public bool hasBeenDismissed;
-        public int timesSeen;
-    }
-}
+// // Extension class for MetaProgressionData for serialization compatibility.
+// [System.Serializable]
+// public class MetaProgressionData
+// {
+//     [System.Serializable]
+//     public class HintProgressData
+//     {
+//         public string hintId;
+//         public bool hasBeenShown;
+//         public bool hasBeenDismissed;
+//         public int timesSeen;
+//     }
+// }

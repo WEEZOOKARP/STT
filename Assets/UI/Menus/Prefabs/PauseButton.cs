@@ -63,20 +63,9 @@ public class PauseButton : MonoBehaviour
             return; // Blocking.
         }
 
-        // Toggles pause menu.
-        if (MenuManager.Instance == null)
-            return;
+        // Menu is closed - open it.
+        if (PauseMenuManager.Instance != null)
+            PauseMenuManager.Instance.CreatePauseMenu(false);
 
-        if (MenuManager.Instance.currentMenuState == MenuStates.PauseMenu)
-        {
-            // Menu is open - close it.
-            MenuManager.Instance.ResumeGame();
-        }
-        else
-        {
-            // Menu is closed - open it.
-            if (PauseMenuManager.Instance != null)
-                PauseMenuManager.Instance.OpenPauseMenu();
-        }
     }
 }

@@ -47,7 +47,8 @@ public class MetaProgression : MonoBehaviour
 {
     public static MetaProgression Instance { get; private set; }
 
-    public List<HintProgressData> hintProgress = new List<HintProgressData>();
+    public List<MetaProgressionData.HintProgressData> hintProgress =
+        new List<MetaProgressionData.HintProgressData>();
     public bool hasCompletedTutorial = false;
 
     [Header("Meta Progression Settings")]
@@ -404,9 +405,9 @@ public class MetaProgression : MonoBehaviour
         foreach (var hint in hints)
         {
             hintProgress.Add(
-                new HintProgressData
+                new MetaProgressionData.HintProgressData
                 {
-                    hintId = hint.Key,
+                    hintId = hint.Value.hintId,
                     hasBeenShown = hint.Value.hasBeenShown,
                     hasBeenDismissed = hint.Value.hasBeenDismissed,
                     timesSeen = hint.Value.timesSeen,
@@ -421,9 +422,8 @@ public class MetaProgression : MonoBehaviour
         var result = new Dictionary<string, TutorialHintTracker.HintProgress>();
         foreach (var hint in hintProgress)
         {
-            result[hint.hintId] = new TutorialHintTracker.HintProgress
+            result[hint.hintId] = new TutorialHintTracker.HintProgress(hint.hintId)
             {
-                hintId = hint.hintId,
                 hasBeenShown = hint.hasBeenShown,
                 hasBeenDismissed = hint.hasBeenDismissed,
                 timesSeen = hint.timesSeen,

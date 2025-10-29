@@ -4,7 +4,7 @@
  * Created by Archie Armstrong | 21155564
  * Date: 14/09/2025
  *
- * Last Updated on: ? | BY:
+ * Last Updated on: ? | BY: asasa
  * What:
  * Why:
  *
@@ -101,7 +101,7 @@ public class TutorialManager : MonoBehaviour
         if (MetaProgression.Instance != null)
         {
             // Clearing completion flag.
-            MetaProgression.Instance.GetData().hasCompletedTutorial = false;
+            MetaProgression.Instance.hasCompletedTutorial = false;
 
             // Persisting the change.
             MetaProgression.Instance.SaveData();
@@ -140,7 +140,7 @@ public class TutorialManager : MonoBehaviour
             return false;
         }
         // No list search or string comparison, boolean check.
-        return MetaProgression.Instance.GetData().hasCompletedTutorial;
+        return MetaProgression.Instance.hasCompletedTutorial;
     }
 
     // Marks the tutorial done and persists this fact.
@@ -152,7 +152,7 @@ public class TutorialManager : MonoBehaviour
         if (MetaProgression.Instance != null)
         {
             // Direct assignment.
-            MetaProgression.Instance.GetData().hasCompletedTutorial = true;
+            MetaProgression.Instance.hasCompletedTutorial = true;
 
             // Saving change to persist.
             MetaProgression.Instance.SaveData();
@@ -252,15 +252,13 @@ public class TutorialManager : MonoBehaviour
     void Start()
     {
         // Subscribing to gameplay events for in-game hints.
-        if (GunController.Instance != null)
-        {
-            GunController.OnShotFired += CheckHintTriggers;
-        }
+        GunController.OnShotFired += CheckHintTriggers;
 
-        if (WaveManager.Instance != null)
+        var waveManager = FindObjectOfType<WaveManager>();
+        if (waveManager != null)
         {
-            WaveManager.Instance.OnWaveStart += OnWaveStart;
-            WaveManager.Instance.OnWaveComplete += OnWaveComplete;
+            waveManager.OnWaveStart += OnWaveStart;
+            waveManager.OnWaveComplete += OnWaveComplete;
         }
 
         // Subscribing to enemy spawns.
@@ -283,7 +281,20 @@ public class TutorialManager : MonoBehaviour
         CheckHintTriggers("WaveComplete", waveNumber);
     }
 
-    public void CheckHintTriggers(string triggerType = "")
+    // No-parameter overload for GunController.OnShotFired event
+    public void CheckHintTriggers()
+    {
+        CheckHintTriggersInternal("");
+    }
+
+    // Parameterized overload for wave events
+    public void CheckHintTriggers(string triggerType, int waveNumber = 0)
+    {
+        CheckHintTriggersInternal(triggerType);
+    }
+
+    // Internal implementation
+    void CheckHintTriggersInternal(string triggerType = "")
     {
         if (!SettingsManager.Instance?.currentSettings.tutorialEnabled ?? true)
             return;

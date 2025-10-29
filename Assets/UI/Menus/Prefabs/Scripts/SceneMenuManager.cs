@@ -32,9 +32,9 @@ public class SceneMenuManager : MonoBehaviour
         Debug.Log($"[SceneMenuManager] Scene loaded: {scene.name}");
 
         // Determining current scene from name.
-        if (scene.name == SceneNames.Game.ToString())
+        if (scene.name == SceneNames.CoreGameDemo.ToString())
         {
-            currentScene = SceneNames.Game;
+            currentScene = SceneNames.CoreGameDemo;
         }
         else if (scene.name == SceneNames.MainMenu.ToString())
         {
@@ -42,7 +42,7 @@ public class SceneMenuManager : MonoBehaviour
         }
 
         // Route to appropriate setup based on scene.
-        if (currentScene == SceneNames.Game)
+        if (currentScene == SceneNames.CoreGameDemo)
         {
             // When GameScene loads, inform menuManager and set up menus.
             SetupGameScene();

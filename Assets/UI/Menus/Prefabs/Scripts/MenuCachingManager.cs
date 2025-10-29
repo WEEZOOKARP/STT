@@ -1,9 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class MenuCacheManager : MonoBehaviour
+public class MenuCachingManager : MonoBehaviour
 {
-    public static MenuCacheManager Instance { get; private set; }
+    public static MenuCachingManager Instance { get; private set; }
+
+    private const float CACHE_DURATION = 30f;
 
     void Awake()
     {
@@ -30,7 +32,7 @@ public class MenuCacheManager : MonoBehaviour
                 UpdatePauseTimer(deltaTime);
                 if (
                     PauseMenuManager.Instance.GetPauseMenuCacheTimer()
-                    >= PauseMenuManager.Instance.CACHE_DURATION
+                    >= CACHE_DURATION
                 )
                 {
                     Debug.Log("[MenuCachingManager] Cache expired - destroying PauseMenu");
@@ -49,7 +51,7 @@ public class MenuCacheManager : MonoBehaviour
                 UpdateSettingsTimer(deltaTime);
                 if (
                     SettingsMenuManager.Instance.GetSettingMenuCacheTimer()
-                    >= SettingsMenuManager.Instance.CACHE_DURATION
+                    >= CACHE_DURATION
                 )
                 {
                     Debug.Log("[MenuCachingManager] Cache expired - destroying SettingsMenu");

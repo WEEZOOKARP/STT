@@ -37,7 +37,7 @@ public class TutorialUI : MonoBehaviour
         TutorialManager.OnStepStarted += OnTutorialStepStarted;
         TutorialManager.OnTutorialCompleted += OnTutorialCompleted;
 
-        Button dismissButton = tutorialPanel.GetComponent<Button>();
+        Button dismissButton = tutorialHintPanel.GetComponent<Button>();
         // Wire up dismiss button
         if (dismissButton != null)
         {
