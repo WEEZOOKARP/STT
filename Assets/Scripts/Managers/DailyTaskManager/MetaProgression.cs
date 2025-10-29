@@ -398,22 +398,29 @@ public class MetaProgression : MonoBehaviour
         UnlockCosmetic("Particle Trail");
     }
 
-    public void SaveHintProgress(Dictionary<string, TutorialHintTracker.HintProgress> hints)
+    // Save hint progress to MetaProgression.
+    public void SaveHintProgress()
     {
-        hintProgress.Clear();
-        foreach (var hint in hints)
+        if (MetaProgression.Instance != null)
         {
-            hintProgress.Add(
-                new HintProgressData
-                {
-                    hintId = hint.Key,
-                    hasBeenShown = hint.Value.hasBeenShown,
-                    hasBeenDismissed = hint.Value.hasBeenDismissed,
-                    timesSeen = hint.Value.timesSeen,
-                }
-            );
+            // Convert dictionary to list format for MetaProgression.
+            var hintDataList = new List<MetaProgressionData.HintProgressData>();
+            foreach (var kvp in hintProgress)
+            {
+                hintDataList.Add(
+                    new MetaProgressionData.HintProgressData
+                    {
+                        hintId = kvp.Value.hintId,
+                        hasBeenShown = kvp.Value.hasBeenShown,
+                        hasBeenDismissed = kvp.Value.hasBeenDismissed,
+                        timesSeen = kvp.Value.timesSeen,
+                    }
+                );
+            }
+
+            // Calling MetaProgression to save.
+            MetaProgression.Instance.SaveHintProgress(hintDataList);
         }
-        SaveData();
     }
 
     public Dictionary<string, TutorialHintTracker.HintProgress> GetHintProgress()
