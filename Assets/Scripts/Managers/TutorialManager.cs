@@ -4,7 +4,7 @@
  * Created by Archie Armstrong | 21155564
  * Date: 14/09/2025
  *
- * Last Updated on: ? | BY:
+ * Last Updated on: ? | BY: asasa
  * What:
  * Why:
  *
@@ -29,6 +29,7 @@ public class TutorialManager : MonoBehaviour
     public static TutorialManager Instance { get; private set; }
     public static event Action<TutorialStep> OnStepStarted;
     public static event Action OnTutorialCompleted;
+    public static event System.Action<HintTrigger> OnHintTriggered;
 
     // TutorialManager.Instance.StartTutorial();
 
@@ -100,7 +101,7 @@ public class TutorialManager : MonoBehaviour
         if (MetaProgression.Instance != null)
         {
             // Clearing completion flag.
-            MetaProgression.Instance.GetData().hasCompletedTutorial = false;
+            MetaProgression.Instance.hasCompletedTutorial = false;
 
             // Persisting the change.
             MetaProgression.Instance.SaveData();
@@ -139,7 +140,7 @@ public class TutorialManager : MonoBehaviour
             return false;
         }
         // No list search or string comparison, boolean check.
-        return MetaProgression.Instance.GetData().hasCompletedTutorial;
+        return MetaProgression.Instance.hasCompletedTutorial;
     }
 
     // Marks the tutorial done and persists this fact.
@@ -151,7 +152,7 @@ public class TutorialManager : MonoBehaviour
         if (MetaProgression.Instance != null)
         {
             // Direct assignment.
-            MetaProgression.Instance.GetData().hasCompletedTutorial = true;
+            MetaProgression.Instance.hasCompletedTutorial = true;
 
             // Saving change to persist.
             MetaProgression.Instance.SaveData();
@@ -238,6 +239,145 @@ public class TutorialManager : MonoBehaviour
             BeginStep(currentStepIndex);
         else
             CompleteTutorial();
+    }
+
+    public void AdvanceToNextStep()
+    {
+        TutorialManager.Instance.CompleteCurrentStep();
+    }
+
+    [Header("In-Game Hints")]
+    public HintTrigger[] inGameHints; // Hints that trigger during gameplay
+
+    void Start()
+    {
+        // Subscribing to gameplay events for in-game hints.
+        GunController.OnShotFired += CheckHintTriggers;
+
+        var waveManager = FindObjectOfType<WaveManager>();
+        if (waveManager != null)
+        {
+            waveManager.OnWaveStart += OnWaveStart;
+            waveManager.OnWaveComplete += OnWaveComplete;
+        }
+
+        // Subscribing to enemy spawns.
+        EnemyBehavior.OnEnemySpawned += OnEnemySpawned;
+    }
+
+    void OnDestroy()
+    {
+        // Unsubscribe from enemy spawns to avoid memory leaks
+        EnemyBehavior.OnEnemySpawned -= OnEnemySpawned;
+    }
+
+    void OnWaveStart(int waveNumber)
+    {
+        CheckHintTriggers("WaveStart", waveNumber);
+    }
+
+    void OnWaveComplete(int waveNumber)
+    {
+        CheckHintTriggers("WaveComplete", waveNumber);
+    }
+
+    // No-parameter overload for GunController.OnShotFired event
+    public void CheckHintTriggers()
+    {
+        CheckHintTriggersInternal("");
+    }
+
+    // Parameterized overload for wave events
+    public void CheckHintTriggers(string triggerType, int waveNumber = 0)
+    {
+        CheckHintTriggersInternal(triggerType);
+    }
+
+    // Internal implementation
+    void CheckHintTriggersInternal(string triggerType = "")
+    {
+        if (!SettingsManager.Instance?.currentSettings.tutorialEnabled ?? true)
+            return;
+
+        foreach (HintTrigger hint in inGameHints)
+        {
+            if (ShouldTriggerHint(hint))
+            {
+                ShowHint(hint);
+            }
+        }
+    }
+
+    // Called when an enemy spawns.
+    void OnEnemySpawned(string enemyTypeName, bool isBoss)
+    {
+        Debug.Log($"[TutorialManager] Enemy spawned: {enemyTypeName} (boss: {isBoss})");
+
+        if (isBoss)
+        {
+            // Checking for boss hint.
+            foreach (HintTrigger hint in inGameHints)
+            {
+                if (
+                    hint.triggerType == HintTriggerType.BossEncountered
+                    && TutorialHintTracker.Instance?.ShouldShowHint(hint.hintId) == true
+                )
+                {
+                    ShowHint(hint);
+                    return;
+                }
+            }
+        }
+        else
+        {
+            // Checking for specific enemy type hint.
+            foreach (HintTrigger hint in inGameHints)
+            {
+                if (
+                    hint.triggerType == HintTriggerType.EnemyTypeEncountered
+                    && hint.enemyTypeName == enemyTypeName
+                    && TutorialHintTracker.Instance?.ShouldShowHint(hint.hintId) == true
+                )
+                {
+                    ShowHint(hint);
+                    return;
+                }
+            }
+        }
+    }
+
+    bool ShouldTriggerHint(HintTrigger hint)
+    {
+        // Don't show if tutorials disabled.
+        if (!SettingsManager.Instance?.currentSettings.tutorialEnabled ?? true)
+            return false;
+
+        // Making sure not to show if already shown.
+        if (!TutorialHintTracker.Instance?.ShouldShowHint(hint.hintId) ?? true)
+            return false;
+
+        // Checking the trigger conditions.
+        return hint.triggerType switch
+        {
+            HintTriggerType.GameStart => true, // Always trigger at game start.
+            HintTriggerType.EnemyTypeEncountered => true, // Will be checked by event handler.
+            HintTriggerType.BossEncountered => true, // Will be checked by event handler.
+            HintTriggerType.WaveStart => true, // Wave manager calls this.
+            HintTriggerType.BuildPhaseStart => true, // Build phase calls this.
+            _ => false,
+        };
+    }
+
+    public void ShowHint(HintTrigger hint)
+    {
+        // Mark as shown
+        TutorialHintTracker.Instance?.MarkHintShown(hint.hintId);
+
+        // Fire event for TutorialUI to listen to
+        OnStepStarted?.Invoke(hint.associatedStep);
+        OnHintTriggered?.Invoke(hint);
+
+        Debug.Log($"[TutorialManager] Showing hint: {hint.hintId}");
     }
 
     // Singleton pattern for global access.

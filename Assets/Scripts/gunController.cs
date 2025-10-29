@@ -4,6 +4,8 @@ using UnityEngine.InputSystem;
 
 public class GunController : MonoBehaviour
 {
+    
+
     // Event for tutorial condition subscribed to reload event - Archie | [25/09/25].
     public static event System.Action OnReloadStarted;
     public static event System.Action OnShotFired; // Added by Archie - [25/09/25] - Purpose: Event for tutorial condition subscribed to shoot event.

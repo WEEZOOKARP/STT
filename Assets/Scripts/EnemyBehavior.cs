@@ -15,6 +15,9 @@ public class EnemyBehavior : MonoBehaviour
     private float speedMultiplier = 1f;
     private float damageTakenMultiplier = 1f;
 
+    // For tutorial hints.
+    public static event System.Action<string, bool> OnEnemySpawned;
+
     [Header("AI Settings")]
     [Tooltip("How often we can recompute a path (sec).")]
     [SerializeField] private float repathInterval = 0.25f;
@@ -121,6 +124,16 @@ public class EnemyBehavior : MonoBehaviour
             var go = GameObject.FindWithTag("PlayerAnchor");
             if (go) targetAnchor = go.transform;
             else Debug.LogWarning("EnemyBehavior: No object tagged 'PlayerAnchor' found.");
+        }
+    }
+
+    void Start()
+    {
+        // Fire event for tutorial hint system to detect enemy spawns
+        if (OnEnemySpawned != null)
+        {
+            OnEnemySpawned.Invoke(gameObject.name, isBoss);
+            Debug.Log($"[EnemyBehavior] OnEnemySpawned event fired for {gameObject.name} (boss: {isBoss})");
         }
     }
 
