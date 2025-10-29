@@ -400,9 +400,10 @@ public class MetaProgression : MonoBehaviour
     }
 
     // Save hint progress to MetaProgression.
-    public void SaveHintProgress()
+    public void SaveHintProgress(Dictionary<string, TutorialHintTracker.HintProgress> hints)
     {
-        if (MetaProgression.Instance != null)
+        hintProgress.Clear();
+        foreach (var hint in hints)
         {
             hintProgress.Add(
                 new MetaProgressionData.HintProgressData
@@ -414,6 +415,7 @@ public class MetaProgression : MonoBehaviour
                 }
             );
         }
+        SaveData();
     }
 
     public Dictionary<string, TutorialHintTracker.HintProgress> GetHintProgress()
