@@ -399,10 +399,10 @@ public class MetaProgression : MonoBehaviour
         UnlockCosmetic("Particle Trail");
     }
 
-    public void SaveHintProgress(Dictionary<string, TutorialHintTracker.HintProgress> hints)
+    // Save hint progress to MetaProgression.
+    public void SaveHintProgress()
     {
-        hintProgress.Clear();
-        foreach (var hint in hints)
+        if (MetaProgression.Instance != null)
         {
             hintProgress.Add(
                 new MetaProgressionData.HintProgressData
@@ -414,7 +414,6 @@ public class MetaProgression : MonoBehaviour
                 }
             );
         }
-        SaveData();
     }
 
     public Dictionary<string, TutorialHintTracker.HintProgress> GetHintProgress()
