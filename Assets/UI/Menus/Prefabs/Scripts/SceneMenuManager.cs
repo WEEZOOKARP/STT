@@ -134,4 +134,16 @@ public class SceneMenuManager : MonoBehaviour
 
     // TODO: Make sure that game state is saved when player exists between scenes.
     // Not exactly a job for this class.
+
+    // THIS IS WHY WE DON'T FUCKING PUSH RIGHT BEFORE THE DUE DATE
+    // LEGIT COULDN't LOAD INTO THE DAMN GAME BECAUSE SOMEBODY FORGOT TO
+    // ACTUALLY UPDATE THE SCENE TO MAKE THE PLAY BUTTON DO ANYTHING
+    public void LoadCoreGameDemo()
+    {
+        var cam = Camera.main;
+        if (cam != null) Destroy(cam.gameObject);
+
+        //SceneManager.LoadScene("CoreGameDemo", LoadSceneMode.Single);
+        SceneManager.LoadScene("music demo", LoadSceneMode.Single);
+    }
 }
