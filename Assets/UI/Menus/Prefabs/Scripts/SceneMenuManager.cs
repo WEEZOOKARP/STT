@@ -143,7 +143,7 @@ public class SceneMenuManager : MonoBehaviour
         var cam = Camera.main;
         if (cam != null) Destroy(cam.gameObject);
 
-        //SceneManager.LoadScene("CoreGameDemo", LoadSceneMode.Single);
-        SceneManager.LoadScene("music demo", LoadSceneMode.Single);
+        SceneManager.LoadScene("CoreGameDemo", LoadSceneMode.Single);
+        //SceneManager.LoadScene("music demo", LoadSceneMode.Single);
     }
 }
