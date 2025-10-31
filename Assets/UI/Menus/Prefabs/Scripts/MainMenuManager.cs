@@ -97,6 +97,11 @@ public class MainMenuManager : MonoBehaviour
 
     public void OpenSettings()
     {
+        // Telling MenuManager to determine which menu is the parent (MainMenu in this case).
+        if (MenuManager.Instance != null)
+            MenuManager.Instance.FindSettingsParentMenu();
+
+        // Then opening settings, which will hide this MainMenu.
         if (SettingsMenuManager.Instance != null)
             SettingsMenuManager.Instance.OpenSettingsMenu();
     }
