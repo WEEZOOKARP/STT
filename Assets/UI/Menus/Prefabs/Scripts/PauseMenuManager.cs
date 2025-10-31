@@ -154,6 +154,11 @@ public class PauseMenuManager : MonoBehaviour
     // Method to call for opening settings menu.
     public void OpenSettings()
     {
+        // Telling MenuManager to determine which menu is the parent (PauseMenu in this case).
+        if (MenuManager.Instance != null)
+            MenuManager.Instance.FindSettingsParentMenu();
+        
+        // Then opening settings, which will hide this PauseMenu. 
         if (SettingsMenuManager.Instance != null)
             SettingsMenuManager.Instance.OpenSettingsMenu();
     }

@@ -609,6 +609,7 @@ RectTransform:
   m_Children:
   - {fileID: 1792603405}
   - {fileID: 1896891072}
+  - {fileID: 384587536}
   - {fileID: 6692696788562190805}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -917,10 +918,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 3878909104316644926, guid: b690f0b149c8a63449da0daf930dd8a2, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 384587536}
+    m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b690f0b149c8a63449da0daf930dd8a2, type: 3}
 --- !u!1001 &3548074720500722683
@@ -929,8 +927,20 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 6692696788562190805}
+    m_TransformParent: {fileID: 985932527}
     m_Modifications:
+    - target: {fileID: 325898089585606456, guid: 9323254781ed9494b9bf502c6d9dc7f2, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 482373384145899405, guid: 9323254781ed9494b9bf502c6d9dc7f2, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 747545734705200822, guid: 9323254781ed9494b9bf502c6d9dc7f2, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 810144399644321381, guid: 9323254781ed9494b9bf502c6d9dc7f2, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -993,11 +1003,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 810144399644321381, guid: 9323254781ed9494b9bf502c6d9dc7f2, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: -0.5855713
       objectReference: {fileID: 0}
     - target: {fileID: 810144399644321381, guid: 9323254781ed9494b9bf502c6d9dc7f2, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 306
+      value: 287
       objectReference: {fileID: 0}
     - target: {fileID: 810144399644321381, guid: 9323254781ed9494b9bf502c6d9dc7f2, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -1010,6 +1020,10 @@ PrefabInstance:
     - target: {fileID: 810144399644321381, guid: 9323254781ed9494b9bf502c6d9dc7f2, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1664593089350936958, guid: 9323254781ed9494b9bf502c6d9dc7f2, type: 3}
+      propertyPath: m_Layer
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 1774039971092228701, guid: 9323254781ed9494b9bf502c6d9dc7f2, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
@@ -1031,10 +1045,18 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2586330620160768998, guid: 9323254781ed9494b9bf502c6d9dc7f2, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 2878668106188582030, guid: 9323254781ed9494b9bf502c6d9dc7f2, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 985932528}
+    - target: {fileID: 3144762173658790085, guid: 9323254781ed9494b9bf502c6d9dc7f2, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 3371622473506001613, guid: 9323254781ed9494b9bf502c6d9dc7f2, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
@@ -1074,6 +1096,14 @@ PrefabInstance:
     - target: {fileID: 4153118436815356729, guid: 9323254781ed9494b9bf502c6d9dc7f2, type: 3}
       propertyPath: m_Name
       value: Settings menu
+      objectReference: {fileID: 0}
+    - target: {fileID: 4153118436815356729, guid: 9323254781ed9494b9bf502c6d9dc7f2, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4484783195222501101, guid: 9323254781ed9494b9bf502c6d9dc7f2, type: 3}
+      propertyPath: m_Layer
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 5013706491198728272, guid: 9323254781ed9494b9bf502c6d9dc7f2, type: 3}
       propertyPath: m_AnchorMax.y

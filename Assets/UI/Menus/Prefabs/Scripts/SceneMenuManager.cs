@@ -140,10 +140,11 @@ public class SceneMenuManager : MonoBehaviour
     // ACTUALLY UPDATE THE SCENE TO MAKE THE PLAY BUTTON DO ANYTHING
     public void LoadCoreGameDemo()
     {
-        var cam = Camera.main;
-        if (cam != null) Destroy(cam.gameObject);
+        // var cam = Camera.main;
+        // if (cam != null) Destroy(cam.gameObject);
 
         SceneManager.LoadScene("CoreGameDemo", LoadSceneMode.Single);
         //SceneManager.LoadScene("music demo", LoadSceneMode.Single);
     }
 }
+    
