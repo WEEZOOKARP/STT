@@ -12,14 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19b7d0693b0117447aecc2332789a93a, type: 3}
   m_Name: Step4_Menu
   m_EditorClassIdentifier: 
-  stepName: 
-  stepOrder: 0
-  instructionText: 
+  stepName: Learning about menus!
+  stepOrder: 4
+  instructionText: Press ESC to open the pause menu! 
   instructionImage: {fileID: 0}
   requiresARInteraction: 0
   spatialPosition: {x: 0, y: 0, z: 0}
   useWorldSpaceUI: 0
-  completionCondition: {fileID: 11400000, guid: 7afb8bf0259ddeb4f9344d876c1a9fde, type: 2}
+  completionCondition: {fileID: 11400000, guid: ba7d4ba653e9a0e4abd6857aeb8fc336, type: 2}
   timeoutDuration: 30
   uiPrefab: {fileID: 0}
   showProgressBar: 0

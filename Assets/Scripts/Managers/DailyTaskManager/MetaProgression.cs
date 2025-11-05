@@ -25,9 +25,6 @@ public class MetaProgressionData
     public List<string> unlockedAbilities = new List<string>();
     public List<string> unlockedCosmetics = new List<string>();
 
-    // Tracking tutorial completion status.
-    public bool hasCompletedTutorial = false;
-
     // Currency and resources
     public int metaCurrency = 0;
     public int skillPoints = 0;
@@ -36,13 +33,23 @@ public class MetaProgressionData
     public Dictionary<string, int> enemyKillCounts = new Dictionary<string, int>();
     public Dictionary<string, float> weaponUsageTime = new Dictionary<string, float>();
 
-    // TODO: Implement this for weapon tutorials. - Archie | [25/09/25].
-    public Dictionary<string, bool> weaponTutorialsShown = new Dictionary<string, bool>();
+    [System.Serializable]
+    public class HintProgressData
+    {
+        public string hintId;
+        public bool hasBeenShown;
+        public bool hasBeenDismissed;
+        public int timesSeen;
+    }
 }
 
 public class MetaProgression : MonoBehaviour
 {
     public static MetaProgression Instance { get; private set; }
+
+    public List<MetaProgressionData.HintProgressData> hintProgress =
+        new List<MetaProgressionData.HintProgressData>();
+    public bool hasCompletedTutorial = false;
 
     [Header("Meta Progression Settings")]
     public int healthUpgradeCost = 100;
@@ -390,5 +397,39 @@ public class MetaProgression : MonoBehaviour
         UnlockAbility("Time Slow");
         UnlockCosmetic("Golden Armor");
         UnlockCosmetic("Particle Trail");
+    }
+
+    // Save hint progress to MetaProgression.
+    public void SaveHintProgress(Dictionary<string, TutorialHintTracker.HintProgress> hints)
+    {
+        hintProgress.Clear();
+        foreach (var hint in hints)
+        {
+            hintProgress.Add(
+                new MetaProgressionData.HintProgressData
+                {
+                    hintId = hint.Value.hintId,
+                    hasBeenShown = hint.Value.hasBeenShown,
+                    hasBeenDismissed = hint.Value.hasBeenDismissed,
+                    timesSeen = hint.Value.timesSeen,
+                }
+            );
+        }
+        SaveData();
+    }
+
+    public Dictionary<string, TutorialHintTracker.HintProgress> GetHintProgress()
+    {
+        var result = new Dictionary<string, TutorialHintTracker.HintProgress>();
+        foreach (var hint in hintProgress)
+        {
+            result[hint.hintId] = new TutorialHintTracker.HintProgress(hint.hintId)
+            {
+                hasBeenShown = hint.hasBeenShown,
+                hasBeenDismissed = hint.hasBeenDismissed,
+                timesSeen = hint.timesSeen,
+            };
+        }
+        return result;
     }
 }
